@@ -10,7 +10,7 @@ export default function TaskCard({ task, onToggle }: Props) {
   const [hovered, setHovered] = useState(false);
   const [particles, setParticles] = useState<{ id: number; tx: number; ty: number }[]>([]);
 
-  function handleToggle(e: React.MouseEvent) {
+  function handleToggle() {
     if (!task.is_complete) { 
       setAnimating(true); 
       // Create particles

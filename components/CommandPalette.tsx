@@ -91,7 +91,6 @@ export default function CommandPalette() {
   async function markAllComplete() {
     const { data: authData } = await supabase.auth.getUser();
     if (!authData?.user) return;
-    const todayIso = new Date().toISOString().split("T")[0];
     
     // This is a simplified "mark all" - it would need more logic to match today's specific IDs
     // But since the IDs are generated on the fly in /today, we'll just navigate user to Today 
