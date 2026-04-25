@@ -20,7 +20,7 @@ const RescheduleSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const { missed_tasks, remaining_weeks, topics } = await req.json() as {
-      missed_tasks: { topic_name: string; duration_minutes: number }[];
+      missed_tasks: { topic_name: string; topic_id: string; duration_minutes: number }[];
       remaining_weeks: number;
       topics: { id: string; title: string; week_number: number; estimated_hours: number }[];
     };

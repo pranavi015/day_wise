@@ -52,7 +52,8 @@ export default function TodayPage() {
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayIso = yesterday.toISOString().split("T")[0];
       const hadYesterdayActivity = (completions as { completed_date: string }[] | null)?.some(c => c.completed_date === yesterdayIso) ?? false;
-      setMissedYesterday(!hadYesterdayActivity && yesterdayIso >= (curricula?.[0]?.created_at?.split("T")[0] ?? yesterdayIso));
+      const joinDateStr = curricula?.[0]?.created_at?.split("T")[0] || null;
+      setMissedYesterday(joinDateStr !== null && !hadYesterdayActivity && yesterdayIso >= joinDateStr);
 
       if (srCards) {
         setReviewCards(srCards.map(c => ({
@@ -221,7 +222,7 @@ export default function TodayPage() {
     const { data: curricula } = await supabase.from("curricula").select("id, title, week_number, estimated_hours").eq("user_id", authData.user.id);
     if (!curricula) { setRescheduling(false); return; }
 
-    const missedTasks = tasks.filter(t => !t.is_complete).map(t => ({ topic_name: t.topic_name, duration_minutes: t.duration_minutes }));
+    const missedTasks = tasks.filter(t => !t.is_complete).map(t => ({ topic_name: t.topic_name, topic_id: t.topic_id, duration_minutes: t.duration_minutes }));
     const maxWeek = Math.max(...curricula.map((c: { week_number: number }) => c.week_number), 1);
 
     const res = await fetch("/api/reschedule", {

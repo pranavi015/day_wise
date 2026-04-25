@@ -173,56 +173,21 @@ export default function RoadmapPage() {
     setCurricula((prev: DBTopic[]) => prev.filter((c: DBTopic) => c.id !== id));
   }
 
-  async function handleAddTopic(title: string, desc: string, hours: number, week: number) {
-    const { data: authData } = await supabase.auth.getUser();
-    if (!authData?.user) return;
-
-    // Add to local state (will be pushed to DB on save)
-    const newTopic = {
-      id: `new-${Date.now()}`,
-      user_id: authData.user.id,
-      title,
-      description: desc,
-      estimated_hours: hours,
-      week_number: week,
-      sort_order: curricula.length
-    };
-
-    setCurricula([...curricula, newTopic]);
-  }
-
-  async function handleDefer(topicId: string) {
-    // Immediate save for defer to make it functional outside edit mode
-    const idx = curricula.findIndex((c: DBTopic) => c.id === topicId);
-    if (idx === -1) return;
-
-    const newItems = [...curricula];
-    newItems[idx].week_number += 1;
-    setCurricula(newItems);
-
-    // Auto-save just this one
-    setSaving(true);
-    await supabase.from("curricula").update({ week_number: newItems[idx].week_number }).eq("id", topicId);
-    setSaving(false);
-  }
-
   async function toggleEditMode() {
     if (editing) {
-      // Save everything
       setSaving(true);
       const { data: authData } = await supabase.auth.getUser();
 
-      // Batch upsert isn't directly clean if IDs are 'new-', so we separate them
-      const itemsToUpdate = curricula.filter((c: DBTopic) => !c.id.startsWith("new-")).map((c: DBTopic) => ({
-        id: c.id, user_id: c.user_id, title: c.title, description: c.description, estimated_hours: c.estimated_hours, week_number: c.week_number, sort_order: c.sort_order
+      const itemsToUpsert = curricula.map((c: DBTopic, idx: number) => ({
+        id: c.id,
+        user_id: c.user_id,
+        title: c.title,
+        description: c.description || "",
+        estimated_hours: c.estimated_hours,
+        week_number: c.week_number,
+        sort_order: idx
       }));
 
-      const itemsToInsert = curricula.filter((c: DBTopic) => c.id.startsWith("new-")).map((c: DBTopic) => ({
-        user_id: c.user_id, title: c.title, description: c.description, estimated_hours: c.estimated_hours, week_number: c.week_number, sort_order: c.sort_order
-      }));
-
-      // In real scenario we must also detect deletions. The easiest way is to delete all and re-insert, but that breaks foreign keys (completions).
-      // So we upsert the updates, insert new ones. For deletions, we need to find what's missing.
       const { data: dbItems } = await supabase.from("curricula").select("id").eq("user_id", authData?.user?.id || "");
       if (dbItems) {
         const currentIds = curricula.map((c: DBTopic) => c.id);
@@ -232,10 +197,12 @@ export default function RoadmapPage() {
         }
       }
 
-      if (itemsToUpdate.length > 0) await supabase.from("curricula").upsert(itemsToUpdate);
-      if (itemsToInsert.length > 0) await supabase.from("curricula").insert(itemsToInsert);
+      if (itemsToUpsert.length > 0) {
+        const { error } = await supabase.from("curricula").upsert(itemsToUpsert);
+        if (error) console.error("Failed to save roadmap:", error);
+      }
 
-      await fetchData(); // refresh real IDs
+      await fetchData();
       setSaving(false);
     }
     setEditing(!editing);
@@ -253,6 +220,37 @@ export default function RoadmapPage() {
   const weekNodes: { week: number; topics: DBTopic[] }[] = [];
   for (let w = 1; w <= maxWeek + (editing ? 1 : 0); w++) {
     weekNodes.push({ week: w, topics: weekMap.get(w) || [] });
+  }
+
+  async function handleAddTopic(title: string, desc: string, hours: number, week: number) {
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData?.user) return;
+
+    // Use a true UUID so we don't break Supabase constraints if someone skips the backend fetch
+    const newTopic = {
+      id: crypto.randomUUID(),
+      user_id: authData.user.id,
+      title,
+      description: desc,
+      estimated_hours: hours,
+      week_number: week,
+      sort_order: curricula.length
+    };
+
+    setCurricula([...curricula, newTopic]);
+  }
+
+  async function handleDefer(topicId: string) {
+    const idx = curricula.findIndex((c: DBTopic) => c.id === topicId);
+    if (idx === -1) return;
+
+    const newItems = [...curricula];
+    newItems[idx].week_number += 1;
+    setCurricula(newItems);
+
+    setSaving(true);
+    await supabase.from("curricula").update({ week_number: newItems[idx].week_number }).eq("id", topicId);
+    setSaving(false);
   }
 
   if (loading) {
