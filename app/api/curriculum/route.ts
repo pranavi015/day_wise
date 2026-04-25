@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     }
 
     const { text } = await generateText({
-      model: groq("llama3-70b-8192"),
+      model: groq("llama-3.1-8b-instant"),
       temperature: 0.3,
       system: `You are an expert curriculum designer. 
       Return ONLY a valid JSON object. 

@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       : "N/A";
 
     const { text } = await generateText({
-      model: groq("llama3-70b-8192"),
+      model: groq("llama-3.1-8b-instant"),
       temperature: 0.3,
       system: "You are a warm, encouraging learning coach. Write a personalized weekly study summary in exactly 3 paragraphs separated by newlines. Paragraph 1: What went well. Paragraph 2: Where the student struggled. Paragraph 3: One concrete recommendation for next week. Be specific, human, and motivating. Keep each paragraph to 2-3 sentences.",
       prompt: `Weekly stats:
