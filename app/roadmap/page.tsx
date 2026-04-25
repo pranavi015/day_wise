@@ -329,6 +329,7 @@ export default function RoadmapPage() {
               })}
             </SortableContext>
 
+
             <DragOverlay>
               {activeId ? (
                 <div style={{ opacity: 0.8, padding: 12, background: "var(--bg-surface)", border: "1px solid var(--border-strong)", borderRadius: 10, boxShadow: "var(--shadow-xl)" }}>
