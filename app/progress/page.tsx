@@ -32,7 +32,7 @@ export default function ProgressPage() {
       // Parallel Data Fetching
       const startOfYear = new Date(new Date().getFullYear(), 0, 1).toISOString();
       const results = await Promise.all([
-        supabase.from("profiles").select("schedule_json").eq("id", userId).maybeSingle(),
+        supabase.from("profiles").select("schedule_json, created_at").eq("id", userId).maybeSingle(),
         supabase.from("task_completions").select("*").eq("user_id", userId),
         supabase.from("focus_sessions").select("*").eq("user_id", userId).gte("completed_at", startOfYear),
         supabase.from("curricula").select("*").eq("user_id", userId),
@@ -46,6 +46,10 @@ export default function ProgressPage() {
       const moodLogs = results[4].data as { mood_score: number; logged_at: string }[] | null;
 
       const sched = profile?.schedule_json || {};
+
+      const startDateStr = (curricula && curricula.length > 0) ? curricula[0].created_at : (profile?.created_at || new Date().toISOString());
+      const startDate = new Date(startDateStr);
+      startDate.setHours(0, 0, 0, 0);
 
       // 1. Calculate Streak
       let currentStreak = 0;
@@ -80,12 +84,15 @@ export default function ProgressPage() {
         d.setDate(d.getDate() - i);
         const dateIso = d.toISOString().split("T")[0];
         const dayOfWeek = d.toLocaleDateString("en-US", { weekday: "short" });
+        d.setHours(0, 0, 0, 0);
         
         let plannedMins = 0;
-        if (sched.weekly_varies) {
-          plannedMins = (sched.per_day_hours?.[dayOfWeek] || 0) * 60;
-        } else {
-          plannedMins = (sched.daily_hours || 0) * 60;
+        if (d >= startDate) {
+          if (sched.weekly_varies) {
+            plannedMins = (sched.per_day_hours?.[dayOfWeek] || 0) * 60;
+          } else {
+            plannedMins = (sched.daily_hours || 0) * 60;
+          }
         }
 
         // Sessions on this date
@@ -250,7 +257,10 @@ export default function ProgressPage() {
             <div>
               <p style={{ margin: "0 0 4px", fontSize: 12, color: "var(--sidebar-text)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Weekly Insights</p>
               <p style={{ margin: 0, fontSize: 14.5, color: "var(--sidebar-active-text)", fontWeight: 400, lineHeight: 1.5 }}>
-                {stats.adherenceRate > 80 ? "Outstanding adherence! Keep up this exact pacing to hit your goal effortlessly." : "A bit behind schedule this week. Consider adjusting your goals to a more relaxed pace if you feel overwhelmed."}
+                {dailyData.reduce((a,b)=>a+b.minutes_planned,0) === 0 ? "You haven't planned any tasks for this week yet. Set up your curriculum to begin!" : 
+                 (dailyData.filter(d => d.is_active_day).length <= 1 && dailyData.reduce((a,b)=>a+b.minutes_spent,0) === 0) ? "Welcome to Day 1! Complete your first focus session today to kickstart your journey." :
+                 stats.adherenceRate > 80 ? "Outstanding adherence! Keep up this exact pacing to hit your goal effortlessly." : 
+                 "A bit behind schedule this week. Consider adjusting your goals to a more relaxed pace if you feel overwhelmed."}
               </p>
             </div>
           </div>
