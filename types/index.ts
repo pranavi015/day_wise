@@ -27,6 +27,8 @@ export interface OnboardingState {
   exception_days: string[];
   intensity: Intensity;
   sr_enabled: boolean;
+  has_deadline?: boolean;
+  exam_date?: string;
 }
 
 export interface ProgressLog {

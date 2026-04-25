@@ -2,9 +2,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Play, Pause, RotateCcw, Timer, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import MoodCheckin from "./MoodCheckin";
 
 export default function FocusTimer({ activeTopicId }: { activeTopicId?: string }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showMood, setShowMood] = useState(false);
   const [seconds, setSeconds] = useState(25 * 60);
   const [running, setRunning] = useState(false);
   const [hoverBtn, setHoverBtn] = useState<string | null>(null);
@@ -104,7 +106,7 @@ export default function FocusTimer({ activeTopicId }: { activeTopicId?: string }
           className="modal-enter"
           onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(0.97) translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "var(--shadow-xl)"; }}
           onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1) translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "var(--shadow-md)"; }}
-          onClick={() => setIsOpen(true)}
+          onClick={() => setShowMood(true)}
           style={{ 
             background: "linear-gradient(135deg, var(--accent), var(--accent-hover))", 
             color: "white", border: "none", borderRadius: 30, 
@@ -115,6 +117,9 @@ export default function FocusTimer({ activeTopicId }: { activeTopicId?: string }
           }}>
           <Timer size={18} /> Start Session
         </button>
+      )}
+      {showMood && (
+        <MoodCheckin onComplete={() => { setShowMood(false); setIsOpen(true); }} />
       )}
       <style>{`
         .timer-widget { bottom: 32px; right: 32px; } 

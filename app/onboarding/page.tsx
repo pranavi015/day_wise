@@ -23,6 +23,8 @@ const initialState: OnboardingState = {
   exception_days: [],
   intensity: "balanced",
   sr_enabled: true,
+  has_deadline: false,
+  exam_date: "",
 };
 
 export default function OnboardingPage() {
@@ -103,6 +105,7 @@ export default function OnboardingPage() {
       },
       pacing: state.intensity,
       sr_enabled: state.sr_enabled,
+      exam_date: state.has_deadline && state.exam_date ? state.exam_date : null,
     });
 
     // 2. Insert Curricula (if any)
@@ -297,6 +300,58 @@ export default function OnboardingPage() {
                           onBlur={(e) => (e.target as HTMLElement).style.borderColor = "var(--border-default)"} />
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Deadline & Reverse Planner */}
+              <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: 12, padding: 24, marginBottom: 32, boxShadow: "var(--shadow-sm)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "var(--text-primary)" }}>I have a deadline</h3>
+                    <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-tertiary)" }}>Set an exam date to check your pacing.</p>
+                  </div>
+                  <button onClick={() => setState((s) => ({ ...s, has_deadline: !s.has_deadline }))}
+                    style={{ width: 50, height: 28, borderRadius: 14, border: "none", cursor: "pointer", background: state.has_deadline ? "var(--accent)" : "var(--border-strong)", position: "relative", transition: "background 250ms", flexShrink: 0 }}>
+                    <div style={{ width: 22, height: 22, borderRadius: "50%", background: "white", position: "absolute", top: 3, left: state.has_deadline ? 25 : 3, transition: "left 250ms cubic-bezier(0.34,1.56,0.64,1)", boxShadow: "0 2px 4px rgba(0,0,0,0.2)" }} />
+                  </button>
+                </div>
+
+                {state.has_deadline && (
+                  <div style={{ marginTop: 20 }}>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>Target Date</label>
+                    <input
+                      type="date"
+                      value={state.exam_date}
+                      onChange={e => setState(s => ({ ...s, exam_date: e.target.value }))}
+                      min={new Date().toISOString().split("T")[0]}
+                      style={{ ...inputBase, width: "100%", marginBottom: 16 }}
+                    />
+                    
+                    {state.exam_date && (() => {
+                      const daysLeft = Math.max(1, Math.ceil((new Date(state.exam_date).getTime() - Date.now()) / 86400000));
+                      const totalAvailableHours = daysLeft * (state.weekly_varies ? ((Object.values(state.per_day_hours).reduce((a, b) => a + b, 0)) / 7) : state.daily_hours);
+                      const requiredHours = state.topics.reduce((sum, t) => sum + (t.estimated_minutes / 60), 0);
+                      
+                      const isOverloaded = requiredHours > totalAvailableHours;
+                      
+                      return (
+                        <div style={{ padding: 16, borderRadius: 10, background: isOverloaded ? "var(--error-subtle)" : "var(--success-subtle)", border: `1px solid ${isOverloaded ? "var(--error)" : "var(--success)"}` }}>
+                          <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 600, color: isOverloaded ? "var(--error)" : "var(--success)" }}>
+                            {isOverloaded ? "⚠️ Schedule Warning" : "✅ Good Pacing"}
+                          </p>
+                          <p style={{ margin: 0, fontSize: 13, color: "var(--text-primary)", lineHeight: 1.5 }}>
+                            You need <strong>{requiredHours.toFixed(1)}h</strong> to finish your topics, but only have <strong>{totalAvailableHours.toFixed(1)}h</strong> before the deadline.
+                          </p>
+                          {isOverloaded && (
+                            <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+                              <button onClick={() => { setState(s => ({ ...s, has_deadline: false })); goBack(); }} style={{ flex: 1, padding: "8px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid var(--border-subtle)", background: "var(--bg-surface)", cursor: "pointer", color: "var(--text-primary)" }}>Reduce Scope</button>
+                              <button onClick={() => {}} style={{ flex: 1, padding: "8px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "none", background: "var(--accent)", color: "white", cursor: "pointer" }}>Extend Daily Hrs</button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>

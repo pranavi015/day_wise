@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Map as MapIcon, BarChart2, LogOut, Sparkles, Settings } from "lucide-react";
+import { Home, Map as MapIcon, BarChart2, LogOut, Sparkles, Settings, Users } from "lucide-react";
 import React, { useState } from "react";
 
 interface NavItem {
@@ -14,6 +14,7 @@ const navItems: NavItem[] = [
   { href: "/today",    label: "Today",    icon: Home },
   { href: "/roadmap",  label: "Roadmap",  icon: MapIcon },
   { href: "/progress", label: "Progress", icon: BarChart2 },
+  { href: "/buddy",    label: "Buddy",    icon: Users },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

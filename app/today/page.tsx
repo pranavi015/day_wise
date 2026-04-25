@@ -11,9 +11,13 @@ import confetti from "canvas-confetti";
 export default function TodayPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [streak, setStreak] = useState(0);
+  const [reviewCards, setReviewCards] = useState<{ id: string; topic_id: string; title: string; next_review_date: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
   const [toast, setToast] = useState<{ show: boolean; text: string; streak: number } | null>(null);
+  const [missedYesterday, setMissedYesterday] = useState(false);
+  const [examDate, setExamDate] = useState<string | null>(null);
+  const [rescheduling, setRescheduling] = useState(false);
 
   const todayStr = new Date().toISOString().split("T")[0];
   const todayDisplay = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
@@ -31,12 +35,33 @@ export default function TodayPage() {
       const results = await Promise.all([
         supabase.from("profiles").select("*").eq("id", userId).single(),
         supabase.from("curricula").select("*").eq("user_id", userId).order("sort_order", { ascending: true }),
-        supabase.from("task_completions").select("*").eq("user_id", userId)
+        supabase.from("task_completions").select("*").eq("user_id", userId),
+        supabase.from("sr_cards").select("id, topic_id, next_review_date, curricula(title)").eq("user_id", userId).lte("next_review_date", todayStr)
       ]);
 
       const profile = results[0].data;
       const curricula = results[1].data;
       const completions = results[2].data;
+      const srCards = results[3].data as { id: string; topic_id: string; next_review_date: string; curricula: { title: string } | null }[] | null;
+
+      // P15: Exam deadline countdown
+      if (profile?.exam_date) setExamDate(profile.exam_date as string);
+
+      // P12: Missed yesterday detection
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayIso = yesterday.toISOString().split("T")[0];
+      const hadYesterdayActivity = (completions as { completed_date: string }[] | null)?.some(c => c.completed_date === yesterdayIso) ?? false;
+      setMissedYesterday(!hadYesterdayActivity && yesterdayIso >= (curricula?.[0]?.created_at?.split("T")[0] ?? yesterdayIso));
+
+      if (srCards) {
+        setReviewCards(srCards.map(c => ({
+          id: c.id,
+          topic_id: c.topic_id,
+          title: c.curricula?.title ?? "Unknown Topic",
+          next_review_date: c.next_review_date,
+        })));
+      }
 
       // Calculate Streak
       let currentStreak = 0;
@@ -188,6 +213,37 @@ export default function TodayPage() {
     }
   }
 
+  async function handleReschedule() {
+    setRescheduling(true);
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData?.user) { setRescheduling(false); return; }
+
+    const { data: curricula } = await supabase.from("curricula").select("id, title, week_number, estimated_hours").eq("user_id", authData.user.id);
+    if (!curricula) { setRescheduling(false); return; }
+
+    const missedTasks = tasks.filter(t => !t.is_complete).map(t => ({ topic_name: t.topic_name, duration_minutes: t.duration_minutes }));
+    const maxWeek = Math.max(...curricula.map((c: { week_number: number }) => c.week_number), 1);
+
+    const res = await fetch("/api/reschedule", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ missed_tasks: missedTasks, remaining_weeks: maxWeek, topics: curricula }),
+    });
+
+    const data = await res.json() as { updates?: { topic_id: string; new_week_number: number }[]; summary?: string };
+    if (data.updates) {
+      for (const upd of data.updates) {
+        await supabase.from("curricula").update({ week_number: upd.new_week_number }).eq("id", upd.topic_id);
+      }
+      setMissedYesterday(false);
+      if (data.summary) {
+        setToast({ show: true, text: data.summary, streak: 0 });
+        setTimeout(() => setToast(null), 5000);
+      }
+    }
+    setRescheduling(false);
+  }
+
   if (loading) {
      return <div style={{ minHeight: "100vh", background: "var(--bg-base)", display: "flex", alignItems: "center", justifyContent: "center" }}><Loader2 className="animate-spin text-indigo-500" size={32} /></div>;
   }
@@ -200,7 +256,34 @@ export default function TodayPage() {
       <main style={{ marginLeft: 224, flex: 1, paddingBottom: 80 }} className="today-main">
         <div style={{ maxWidth: 720, margin: "0 auto", padding: "40px 32px" }}>
 
-          {/* Header */}
+          {/* P15: Exam countdown chip */}
+          {examDate && (() => {
+            const daysLeft = Math.max(0, Math.ceil((new Date(examDate).getTime() - Date.now()) / 86400000));
+            return (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: daysLeft <= 7 ? "var(--error-subtle)" : "var(--accent-subtle)", border: `1px solid ${daysLeft <= 7 ? "var(--error)" : "var(--accent-muted)"}`, borderRadius: 20, padding: "4px 12px", fontSize: 12, fontWeight: 700, color: daysLeft <= 7 ? "var(--error)" : "var(--accent)", marginBottom: 12 }}>
+                🎯 {daysLeft} day{daysLeft !== 1 ? "s" : ""} to exam
+              </div>
+            );
+          })()}
+
+          {/* P12: Missed day banner */}
+          {missedYesterday && (
+            <div style={{ background: "var(--warning-subtle)", border: "1px solid #FCD34D", borderRadius: 14, padding: "14px 18px", marginBottom: 20, display: "flex", alignItems: "center", gap: 14, boxShadow: "var(--shadow-sm)" }}>
+              <span style={{ fontSize: 22 }}>📅</span>
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>You missed yesterday</p>
+                <p style={{ margin: "2px 0 0", fontSize: 12.5, color: "var(--text-secondary)" }}>Want me to redistribute your schedule?</p>
+              </div>
+              <button
+                onClick={handleReschedule}
+                disabled={rescheduling}
+                style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: "var(--warning)", color: "white", fontWeight: 600, fontSize: 13, cursor: rescheduling ? "wait" : "pointer", whiteSpace: "nowrap" }}
+              >
+                {rescheduling ? "Rescheduling..." : "Reschedule"}
+              </button>
+              <button onClick={() => setMissedYesterday(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-tertiary)", padding: 4 }}><X size={14} /></button>
+            </div>
+          )}
           <div style={{ marginBottom: 32 }}>
             <p style={{ margin: "0 0 6px", fontSize: 13.5, color: "var(--text-tertiary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{todayDisplay}</p>
             <h1 style={{ margin: 0, fontSize: 32, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.8px" }}>
@@ -260,6 +343,34 @@ export default function TodayPage() {
               </div>
             ))}
           </div>
+
+          {/* Reviews Due (P9) */}
+          {reviewCards.length > 0 && (
+            <div style={{ marginTop: 40 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--warning)" }} />
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>Reviews Due</h2>
+                <span style={{ fontSize: 12, background: "var(--warning-subtle)", color: "var(--warning)", borderRadius: 10, padding: "2px 8px", fontWeight: 700 }}>{reviewCards.length}</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {reviewCards.map((card) => (
+                  <div key={card.id} style={{ background: "var(--bg-surface)", border: "1px solid var(--warning-subtle)", borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14, boxShadow: "var(--shadow-sm)" }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--warning-subtle)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🔁</div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: 0, fontWeight: 600, fontSize: 14, color: "var(--text-primary)" }}>{card.title}</p>
+                      <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--text-tertiary)" }}>Due: {card.next_review_date}</p>
+                    </div>
+                    <button
+                      onClick={() => window.open(`/roadmap`, "_self")}
+                      style={{ fontSize: 12, fontWeight: 600, color: "var(--warning)", background: "var(--warning-subtle)", border: "1px solid #FCD34D", borderRadius: 6, padding: "6px 12px", cursor: "pointer" }}
+                    >
+                      Review →
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Streak callout */}
           <div style={{ 

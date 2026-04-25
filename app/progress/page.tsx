@@ -15,6 +15,10 @@ export default function ProgressPage() {
   const [dailyData, setDailyData] = useState<{ date: string; minutes_planned: number; minutes_spent: number }[]>([]);
   const [topicData, setTopicData] = useState<{ name: string; mins: number }[]>([]);
   const [heatmapData, setHeatmapData] = useState<Record<string, number>>({});
+  const [coachSummary, setCoachSummary] = useState<string | null>(null);
+  const [coachLoading, setCoachLoading] = useState(false);
+  const [burnoutScore, setBurnoutScore] = useState(0);
+  const [moodData, setMoodData] = useState<{ date: string; mood: number; completion: number }[]>([]);
 
   useEffect(() => {
     async function fetchProgress() {
@@ -31,13 +35,15 @@ export default function ProgressPage() {
         supabase.from("profiles").select("schedule_json").eq("id", userId).single(),
         supabase.from("task_completions").select("*").eq("user_id", userId),
         supabase.from("focus_sessions").select("*").eq("user_id", userId).gte("completed_at", startOfYear),
-        supabase.from("curricula").select("*").eq("user_id", userId)
+        supabase.from("curricula").select("*").eq("user_id", userId),
+        supabase.from("mood_logs").select("mood_score, logged_at").eq("user_id", userId).gte("logged_at", new Date(Date.now() - 30 * 86400000).toISOString())
       ]);
 
       const profile = results[0].data;
       const completions = results[1].data;
       const sessions = results[2].data;
       const curricula = results[3].data;
+      const moodLogs = results[4].data as { mood_score: number; logged_at: string }[] | null;
 
       const sched = profile?.schedule_json || {};
 
@@ -134,6 +140,33 @@ export default function ProgressPage() {
         adherenceRate: adherence
       });
 
+      // Burnout Risk Score (P13)
+      // Components: 7-day completion rate, adherence, consecutive-miss detection
+      const missedDays = last7Days.filter(d => d.minutes_spent === 0 && d.minutes_planned > 0).length;
+      const overStudying = adherence > 130 ? 20 : 0;
+      const rawBurnout = Math.min(100, Math.round((
+        (1 - Math.min(adherence / 100, 1)) * 40 +
+        (missedDays / 7) * 40 +
+        overStudying
+      )));
+      setBurnoutScore(rawBurnout);
+
+      // Mood vs Completion (P14)
+      if (moodLogs && moodLogs.length > 0) {
+        const moodByDate: Record<string, number[]> = {};
+        moodLogs.forEach(m => {
+          const d = m.logged_at.split("T")[0];
+          if (!moodByDate[d]) moodByDate[d] = [];
+          moodByDate[d].push(m.mood_score);
+        });
+        const moodPoints = Object.entries(moodByDate).map(([date, scores]) => {
+          const avgMood = scores.reduce((a, b) => a + b, 0) / scores.length;
+          const dayCompletions = (completions as { completed_date: string }[])?.filter(c => c.completed_date === date).length ?? 0;
+          return { date, mood: Math.round(avgMood * 10) / 10, completion: dayCompletions };
+        }).sort((a, b) => a.date.localeCompare(b.date)).slice(-14);
+        setMoodData(moodPoints);
+      }
+
       setLoading(false);
     }
     fetchProgress();
@@ -147,6 +180,38 @@ export default function ProgressPage() {
   ];
 
   const maxMins = Math.max(...dailyData.map((d) => Math.max(d.minutes_planned, d.minutes_spent)), 60);
+
+  async function generateCoach() {
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData?.user) return;
+    setCoachLoading(true);
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    const weekStartStr = weekStart.toISOString().split("T")[0];
+
+    // Check cache first
+    const { data: cached } = await supabase.from("weekly_summaries").select("summary_text").eq("user_id", authData.user.id).eq("week_start", weekStartStr).single();
+    if (cached?.summary_text) {
+      setCoachSummary(cached.summary_text);
+      setCoachLoading(false);
+      return;
+    }
+
+    const res = await fetch("/api/coach", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: authData.user.id,
+        topics_completed: topicData.map(t => t.name),
+        total_focus_minutes: dailyData.reduce((a, b) => a + b.minutes_spent, 0),
+        quiz_scores: [],
+        missed_days: dailyData.filter(d => d.minutes_spent === 0 && d.minutes_planned > 0).length,
+      }),
+    });
+    const data = await res.json() as { summary?: string };
+    if (data.summary) setCoachSummary(data.summary);
+    setCoachLoading(false);
+  }
 
   if (loading) {
      return <div style={{ minHeight: "100vh", background: "var(--bg-base)", display: "flex", alignItems: "center", justifyContent: "center" }}><Loader2 className="animate-spin text-indigo-500" size={32} /></div>;
@@ -304,6 +369,83 @@ export default function ProgressPage() {
               </div>
             </div>
           </div>
+
+          {/* P11 — AI Weekly Coach */}
+          <div style={{ background: "var(--sidebar-bg)", borderRadius: 20, padding: 28, marginTop: 32, boxShadow: "0 8px 24px rgba(0,0,0,0.15)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: coachSummary ? 20 : 0 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>🧑‍🏫</div>
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "var(--sidebar-text)", textTransform: "uppercase", letterSpacing: "0.08em" }}>AI Weekly Coach</p>
+                <p style={{ margin: "2px 0 0", fontSize: 14, color: "var(--sidebar-active-text)", fontWeight: 500 }}>Your personalized weekly summary</p>
+              </div>
+              <button
+                onClick={generateCoach}
+                disabled={coachLoading}
+                style={{ padding: "8px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.08)", color: "var(--sidebar-active-text)", fontWeight: 600, fontSize: 13, cursor: coachLoading ? "wait" : "pointer", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}
+              >
+                {coachLoading ? "Generating..." : coachSummary ? "Refresh" : "Generate"}
+              </button>
+            </div>
+            {coachSummary && (
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 20 }}>
+                {coachSummary.split("\n").filter(p => p.trim()).map((para, i) => (
+                  <p key={i} style={{ margin: i > 0 ? "14px 0 0" : 0, fontSize: 14, color: "var(--sidebar-active-text)", lineHeight: 1.7, opacity: 0.9 }}>{para}</p>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* P13 — Burnout Risk Gauge */}
+          <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: 20, padding: 28, marginTop: 32, boxShadow: "var(--shadow-sm)", display: "flex", alignItems: "center", gap: 32 }}>
+            <div style={{ position: "relative", width: 120, height: 72, flexShrink: 0 }}>
+              {(() => {
+                const r = 50;
+                const arcLen = Math.PI * r;
+                const filled = (burnoutScore / 100) * arcLen;
+                const color = burnoutScore < 35 ? "#10B981" : burnoutScore < 65 ? "#F59E0B" : "#EF4444";
+                return (
+                  <svg viewBox="0 0 120 70" width="120" height="70">
+                    <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="var(--bg-muted)" strokeWidth="10" strokeLinecap="round" />
+                    <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke={color} strokeWidth="10" strokeLinecap="round"
+                      strokeDasharray={`${filled} ${arcLen}`} style={{ transition: "stroke-dasharray 800ms cubic-bezier(0.16,1,0.3,1)" }} />
+                    <text x="60" y="56" textAnchor="middle" fontSize="16" fontWeight="800" fill={color}>{burnoutScore}</text>
+                    <text x="60" y="68" textAnchor="middle" fontSize="8" fill="var(--text-tertiary)">/100</text>
+                  </svg>
+                );
+              })()}
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 700, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Wellbeing Score</p>
+              <p style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 700, color: burnoutScore < 35 ? "var(--success)" : burnoutScore < 65 ? "var(--warning)" : "var(--error)", letterSpacing: "-0.3px" }}>
+                {burnoutScore < 35 ? "On Track" : burnoutScore < 65 ? "Moderate Risk" : "High Risk"}
+              </p>
+              <p style={{ margin: 0, fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                {burnoutScore < 35 ? "You're on track — good pacing this week. Keep it up!" : burnoutScore < 65 ? "You've missed a few sessions. Try to be more consistent next week." : "High burnout risk detected. Consider a rest day or reducing your daily goal."}
+              </p>
+            </div>
+          </div>
+
+          {/* P14 — Mood vs Completion Chart */}
+          {moodData.length > 0 && (
+            <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: 20, padding: 28, marginTop: 32, boxShadow: "var(--shadow-sm)" }}>
+              <h2 style={{ margin: "0 0 6px", fontSize: 16, fontWeight: 600, color: "var(--text-primary)" }}>Mood vs Completion</h2>
+              <p style={{ margin: "0 0 20px", fontSize: 13, color: "var(--text-tertiary)" }}>Your energy levels correlated with tasks completed</p>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 8, overflowX: "auto", paddingBottom: 8 }}>
+                {moodData.map((point, i) => (
+                  <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 36 }}>
+                    <span style={{ fontSize: 11, color: "var(--text-tertiary)", fontWeight: 600 }}>{point.completion}</span>
+                    <div
+                      title={`${point.date}: Mood ${point.mood}/5, ${point.completion} tasks`}
+                      style={{ width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, background: `rgba(99,102,241,${point.mood / 5 * 0.6 + 0.1})`, border: "2px solid var(--accent-muted)", cursor: "pointer" }}
+                    >
+                      {["😴","😕","😐","🙂","⚡"][Math.round(point.mood) - 1]}
+                    </div>
+                    <span style={{ fontSize: 10, color: "var(--text-tertiary)" }}>{point.date.slice(5)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
         </div>
       </main>

@@ -31,6 +31,8 @@ export default function SettingsPage() {
   });
 
   const [pacing, setPacing] = useState<Intensity>("balanced");
+  const [examDate, setExamDate] = useState("");
+  const [hasDeadline, setHasDeadline] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -44,6 +46,7 @@ export default function SettingsPage() {
         setProfile({ id: userId, full_name: data.full_name || "", avatar_url: data.avatar_url || "" });
         if (data.schedule_json) setSchedule(data.schedule_json);
         if (data.pacing) setPacing(data.pacing as Intensity);
+        if (data.exam_date) { setExamDate(data.exam_date as string); setHasDeadline(true); }
       } else {
          setProfile((p) => ({ ...p, id: userId }));
       }
@@ -77,7 +80,8 @@ export default function SettingsPage() {
         id: profile.id,
         full_name: profile.full_name,
         schedule_json: schedule,
-        pacing: pacing
+        pacing: pacing,
+        exam_date: hasDeadline && examDate ? examDate : null,
       });
       setSaveMessage("Settings saved successfully.");
       setTimeout(() => setSaveMessage(""), 3000);
@@ -194,11 +198,50 @@ export default function SettingsPage() {
             </div>
           </section>
 
+          {/* Deadline Section (P15) */}
+          <section style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: 16, padding: "24px", marginBottom: 24, boxShadow: "var(--shadow-sm)" }}>
+            <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", marginBottom: 4 }}>Exam / Deadline</h2>
+            <p style={{ margin: "0 0 20px", fontSize: 13.5, color: "var(--text-secondary)" }}>Set a deadline to see a countdown timer and get pacing recommendations.</p>
+
+            <label style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, cursor: "pointer" }}>
+              <div
+                onClick={() => setHasDeadline(h => !h)}
+                style={{ width: 44, height: 24, borderRadius: 12, background: hasDeadline ? "var(--accent)" : "var(--bg-muted)", position: "relative", transition: "background 200ms", cursor: "pointer", flexShrink: 0 }}
+              >
+                <div style={{ width: 18, height: 18, borderRadius: "50%", background: "white", position: "absolute", top: 3, left: hasDeadline ? 23 : 3, transition: "left 200ms", boxShadow: "0 1px 4px rgba(0,0,0,0.2)" }} />
+              </div>
+              <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>I have a deadline</span>
+            </label>
+
+            {hasDeadline && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>
+                  Exam / deadline date
+                  <input
+                    type="date"
+                    value={examDate}
+                    onChange={e => setExamDate(e.target.value)}
+                    min={new Date().toISOString().split("T")[0]}
+                    style={{ display: "block", marginTop: 8, width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border-default)", background: "var(--bg-subtle)", fontSize: 14, color: "var(--text-primary)", outline: "none" }}
+                  />
+                </label>
+                {examDate && (() => {
+                  const daysLeft = Math.max(1, Math.ceil((new Date(examDate).getTime() - Date.now()) / 86400000));
+                  const dailyHours = schedule.daily_hours || 1.5;
+                  return (
+                    <div style={{ padding: "12px 14px", borderRadius: 10, background: daysLeft < 7 ? "var(--error-subtle)" : "var(--success-subtle)", border: `1px solid ${daysLeft < 7 ? "var(--error)" : "var(--success)"}`, fontSize: 13 }}>
+                      <strong>{daysLeft} days</strong> until your deadline. At <strong>{dailyHours}h/day</strong>, that&apos;s <strong>{(daysLeft * dailyHours).toFixed(0)} total hours</strong> of study time available.
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+          </section>
+
         </div>
       </main>
-
       <style>{`
-        @media (max-width: 768px) { .settings-main { margin-left: 0 !important; padding-bottom: 120px !important; } }
+        @media (max-width: 768px) { .settings-main { margin-left: 0 !important; } }
       `}</style>
     </div>
   );
