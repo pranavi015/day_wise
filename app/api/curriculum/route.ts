@@ -11,7 +11,7 @@ export const maxDuration = 30;
 export async function POST(req: Request) {
   const { goal } = await req.json();
 
-  const result = streamObject({
+  const result = await streamObject({
     model: groq("llama-3.3-70b-versatile"),
     system: "You are an expert curriculum designer. Break down the user's learning goal into an array of topics. Provide a solid, rigorous but realistic breakdown. Return an array of topic objects. Each topic must have a 'title', 'description', 'estimated_hours' (a number), and a 'week_number' (starting from 1, typically 1 to 4 topics per week). Be very concise in descriptions.",
     prompt: `Generate a full curriculum for this goal: ${goal}`,
