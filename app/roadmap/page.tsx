@@ -141,13 +141,13 @@ export default function RoadmapPage() {
   async function fetchData() {
     setLoading(true);
     const { data: authData, error: authError } = await supabase.auth.getUser();
-    
+
     if (authData?.user) {
       const { data, error } = await supabase.from("curricula")
         .select("*")
         .eq("user_id", authData.user.id)
         .order("sort_order", { ascending: true });
-        
+
       if (error) {
         console.error("Database schema error:", error.message);
         setDbError(error.message);
@@ -221,8 +221,8 @@ export default function RoadmapPage() {
         }
         setTimeout(() => setToast(null), 3000);
       } else {
-         setToast({ show: true, msg: "Roadmap saved successfully!", type: "success" });
-         setTimeout(() => setToast(null), 3000);
+        setToast({ show: true, msg: "Roadmap saved successfully!", type: "success" });
+        setTimeout(() => setToast(null), 3000);
       }
 
       await fetchData();
@@ -319,16 +319,16 @@ export default function RoadmapPage() {
               </p>
             </div>
             {curricula.length > 0 && (
-              <button 
-                onClick={toggleEditMode} 
-                disabled={saving} 
-                style={{ 
-                  background: editing ? "var(--success)" : "linear-gradient(135deg, var(--bg-surface), var(--bg-subtle))", 
-                  color: editing ? "white" : "var(--text-primary)", 
-                  border: `1px solid ${editing ? "var(--success)" : "var(--border-strong)"}`, 
-                  borderRadius: 10, padding: "12px 20px", fontWeight: 600, fontSize: 14, 
-                  cursor: saving ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 10, 
-                  boxShadow: "var(--shadow-md)", transition: "all 0.2s ease" 
+              <button
+                onClick={toggleEditMode}
+                disabled={saving}
+                style={{
+                  background: editing ? "var(--success)" : "linear-gradient(135deg, var(--bg-surface), var(--bg-subtle))",
+                  color: editing ? "white" : "var(--text-primary)",
+                  border: `1px solid ${editing ? "var(--success)" : "var(--border-strong)"}`,
+                  borderRadius: 10, padding: "12px 20px", fontWeight: 600, fontSize: 14,
+                  cursor: saving ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 10,
+                  boxShadow: "var(--shadow-md)", transition: "all 0.2s ease"
                 }}
               >
                 {saving ? <Loader2 size={16} className="animate-spin" /> : editing ? "Save Changes" : "Edit Roadmap"}
@@ -339,19 +339,19 @@ export default function RoadmapPage() {
           {/* Zero State Hero */}
           {curricula.length === 0 && !editing && (
             <div style={{ background: "linear-gradient(145deg, var(--bg-surface), var(--bg-subtle))", border: "1px dashed var(--border-strong)", borderRadius: 24, padding: "80px 40px", textAlign: "center", boxShadow: "var(--shadow-lg)", position: "relative", overflow: "hidden" }}>
-               <div style={{ position: "absolute", top: -50, left: -50, width: 200, height: 200, background: "var(--accent)", opacity: 0.05, borderRadius: "50%", filter: "blur(40px)" }} />
-               <div style={{ position: "absolute", bottom: -50, right: -50, width: 150, height: 150, background: "var(--focus)", opacity: 0.05, borderRadius: "50%", filter: "blur(30px)" }} />
-               
-               <div style={{ width: 80, height: 80, borderRadius: "50%", background: "var(--accent-subtle)", border: "4px solid var(--bg-surface)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px", boxShadow: "0 8px 24px rgba(99,102,241,0.2)" }}>
-                 <ListPlus size={36} color="var(--accent)" />
-               </div>
-               <h2 style={{ fontSize: 26, fontWeight: 700, margin: "0 0 12px", color: "var(--text-primary)", letterSpacing: "-0.5px" }}>Blank Canvas</h2>
-               <p style={{ fontSize: 16, color: "var(--text-secondary)", margin: "0 auto 32px", maxWidth: 450, lineHeight: 1.6 }}>
-                 You don&apos;t have any topics scheduled yet. Start mapping out what you want to learn, and we&apos;ll automatically generate your daily tasks.
-               </p>
-               <button onClick={toggleEditMode} style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-hover))", color: "white", border: "none", borderRadius: 12, padding: "16px 32px", fontSize: 15, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 10, boxShadow: "0 10px 20px rgba(99,102,241,0.25)", transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1)" }}>
-                 <ListPlus size={18} /> Schedule First Topic
-               </button>
+              <div style={{ position: "absolute", top: -50, left: -50, width: 200, height: 200, background: "var(--accent)", opacity: 0.05, borderRadius: "50%", filter: "blur(40px)" }} />
+              <div style={{ position: "absolute", bottom: -50, right: -50, width: 150, height: 150, background: "var(--focus)", opacity: 0.05, borderRadius: "50%", filter: "blur(30px)" }} />
+
+              <div style={{ width: 80, height: 80, borderRadius: "50%", background: "var(--accent-subtle)", border: "4px solid var(--bg-surface)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px", boxShadow: "0 8px 24px rgba(99,102,241,0.2)" }}>
+                <ListPlus size={36} color="var(--accent)" />
+              </div>
+              <h2 style={{ fontSize: 26, fontWeight: 700, margin: "0 0 12px", color: "var(--text-primary)", letterSpacing: "-0.5px" }}>Blank Canvas</h2>
+              <p style={{ fontSize: 16, color: "var(--text-secondary)", margin: "0 auto 32px", maxWidth: 450, lineHeight: 1.6 }}>
+                You don&apos;t have any topics scheduled yet. Start mapping out what you want to learn, and we&apos;ll automatically generate your daily tasks.
+              </p>
+              <button onClick={toggleEditMode} style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-hover))", color: "white", border: "none", borderRadius: 12, padding: "16px 32px", fontSize: 15, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 10, boxShadow: "0 10px 20px rgba(99,102,241,0.25)", transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1)" }}>
+                <ListPlus size={18} /> Schedule First Topic
+              </button>
             </div>
           )}
 

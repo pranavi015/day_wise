@@ -98,9 +98,11 @@ export default function OnboardingPage() {
 
   async function handleFinish() {
     setSaving(true);
-    const { data: authData } = await supabase.auth.getUser();
-    if (!authData?.user) {
-      // Fallback if not logged in
+    setError(null);
+
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData?.user) {
+      // Fallback if not logged in — save to localStorage and redirect to sign up
       localStorage.setItem("daywise_onboarding", JSON.stringify(state));
       router.push("/auth/signup");
       return;
@@ -108,8 +110,8 @@ export default function OnboardingPage() {
 
     const userId = authData.user.id;
 
-    // 1. Update Profile schedule & pacing
-    await supabase.from("profiles").upsert({
+    // 1. Upsert Profile schedule & pacing
+    const { error: profileError } = await supabase.from("profiles").upsert({
       id: userId,
       schedule_json: {
         daily_hours: state.daily_hours,
@@ -119,7 +121,19 @@ export default function OnboardingPage() {
       pacing: state.intensity,
       sr_enabled: state.sr_enabled,
       exam_date: state.has_deadline && state.exam_date ? state.exam_date : null,
+      onboarding_complete: true,
     });
+
+    if (profileError) {
+      console.error("Error saving profile:", profileError);
+      if (profileError.code === "42501" || profileError.message?.includes("row-level security") || String(profileError).includes("403")) {
+        setError("Permission denied: Supabase RLS policies are not set up. Run supabase_rls_fix.sql in your Supabase SQL Editor.");
+      } else {
+        setError(`Failed to save profile: ${profileError.message}`);
+      }
+      setSaving(false);
+      return;
+    }
 
     // 2. Insert Curricula (if any)
     if (state.topics.length > 0) {
@@ -134,7 +148,11 @@ export default function OnboardingPage() {
       const { error: curriculaError } = await supabase.from("curricula").insert(inserts);
       if (curriculaError) {
         console.error("Error saving curricula:", curriculaError);
-        setError("Failed to save your roadmap. Please try again.");
+        if (curriculaError.code === "42501" || curriculaError.message?.includes("row-level security") || String(curriculaError).includes("403")) {
+          setError("Permission denied: Supabase RLS policies are not set up. Run supabase_rls_fix.sql in your Supabase SQL Editor.");
+        } else {
+          setError(`Failed to save your roadmap: ${curriculaError.message}`);
+        }
         setSaving(false);
         return;
       }
@@ -492,6 +510,12 @@ export default function OnboardingPage() {
                   <p style={{ margin: "2px 0 0", fontSize: 13.5, color: "var(--text-secondary)" }}>{state.topics.length} topics · {state.weekly_varies ? "Custom schedule" : `${state.daily_hours}h/day`} · {state.intensity} pace</p>
                 </div>
               </div>
+
+              {error && (
+                <p style={{ color: "var(--error)", fontSize: 13, marginBottom: 16, fontWeight: 500, padding: "12px 16px", background: "var(--error-subtle)", borderRadius: 8, border: "1px solid var(--error)", lineHeight: 1.5 }}>
+                  ⚠️ {error}
+                </p>
+              )}
 
               <div style={{ display: "flex", gap: 12 }}>
                 <button onClick={goBack} style={{ flex: 1, background: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border-default)", borderRadius: 10, padding: "16px", fontWeight: 600, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "background 200ms" }}
