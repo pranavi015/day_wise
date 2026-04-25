@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Sidebar from "@/components/Sidebar";
 import { supabase } from "@/lib/supabase";
 import { Loader2, Upload, User, Check } from "lucide-react";
@@ -138,7 +138,7 @@ export default function SettingsPage() {
 
             <div>
               <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>Display Name</label>
-              <input value={profile.full_name} onChange={e => setProfile({...profile, full_name: e.target.value})} 
+              <input value={profile.full_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProfile({...profile, full_name: e.target.value})} 
                      style={{ width: "100%", border: "1px solid var(--border-default)", borderRadius: 8, padding: "10px 14px", fontSize: 14, color: "var(--text-primary)", outline: "none" }} />
             </div>
           </section>
@@ -153,13 +153,13 @@ export default function SettingsPage() {
                 <span style={{ fontSize: 20, fontWeight: 700, color: "var(--accent)" }}>{schedule.daily_hours}h</span>
               </div>
               <input type="range" min={0.5} max={8} step={0.5} value={schedule.daily_hours}
-                onChange={(e) => setSchedule((s) => ({ ...s, daily_hours: parseFloat(e.target.value) }))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSchedule((s) => ({ ...s, daily_hours: parseFloat(e.target.value) }))}
                 style={{ width: "100%", accentColor: "var(--accent)", cursor: "pointer", height: 6 }} />
             </div>
 
             <div>
               <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", marginBottom: 16 }}>
-                <input type="checkbox" checked={schedule.weekly_varies} onChange={(e) => setSchedule((s) => ({ ...s, weekly_varies: e.target.checked }))} style={{ accentColor: "var(--accent)", width: 16, height: 16, cursor: "pointer" }} />
+                <input type="checkbox" checked={schedule.weekly_varies} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSchedule((s) => ({ ...s, weekly_varies: e.target.checked }))} style={{ accentColor: "var(--accent)", width: 16, height: 16, cursor: "pointer" }} />
                 <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>My schedule varies by day</span>
               </label>
               {schedule.weekly_varies && (
@@ -168,7 +168,7 @@ export default function SettingsPage() {
                     <div key={day} style={{ textAlign: "center" }}>
                       <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 6 }}>{day}</div>
                       <input type="number" min={0} max={8} step={0.5} value={schedule.per_day_hours[day as keyof typeof schedule.per_day_hours]}
-                        onChange={(e) => setSchedule((s) => ({ ...s, per_day_hours: { ...s.per_day_hours, [day]: parseFloat(e.target.value) || 0 } }))}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSchedule((s) => ({ ...s, per_day_hours: { ...s.per_day_hours, [day]: parseFloat(e.target.value) || 0 } }))}
                         style={{ width: "100%", border: "1px solid var(--border-default)", borderRadius: 6, padding: "6px 2px", fontSize: 13, fontWeight: 500, textAlign: "center", outline: "none" }} />
                     </div>
                   ))}

@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { BookOpen, Clock, Zap, ChevronRight, ChevronLeft, Plus, X, Check, Sparkles, Loader2 } from "lucide-react";
 import type { Topic, Intensity, OnboardingState } from "@/types";
-import { experimental_useObject as useObject } from "ai/react";
+import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 
@@ -46,12 +46,12 @@ export default function OnboardingPage() {
         })
       ),
     }),
-    onFinish: ({ object }) => {
+    onFinish: ({ object }: { object?: { topics?: { title: string; description: string; estimated_hours: number; week_number: number }[] } }) => {
       if (object?.topics) {
-        const generatedTopics: Topic[] = object.topics.map((t, i) => ({
+        const generatedTopics: Topic[] = object.topics.map((t: { title: string; estimated_hours: number }, i: number) => ({
           id: `ai-${Date.now()}-${i}`,
           name: t.title,
-          difficulty: 3,
+          difficulty: 3 as const,
           estimated_minutes: t.estimated_hours * 60,
         }));
         setState((s) => ({ ...s, topics: [...s.topics, ...generatedTopics] }));
@@ -124,7 +124,7 @@ export default function OnboardingPage() {
   const weeklyMinutes = state.weekly_varies
     ? (Object.values(state.per_day_hours).reduce((a, b) => a + b, 0)) * 60
     : state.daily_hours * 60 * 7;
-  
+
   const totalWeeks = Math.ceil(
     state.topics.reduce((sum, t) => sum + t.estimated_minutes, 0) / (weeklyMinutes || 1)
   ) || 4;
@@ -193,7 +193,7 @@ export default function OnboardingPage() {
                   <Sparkles size={16} color="var(--accent)" /> Let AI suggest a path
                 </p>
                 <div style={{ display: "flex", gap: 10 }}>
-                  <input value={goalInput} onChange={(e) => setGoalInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addFromGoal()}
+                  <input value={goalInput} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGoalInput(e.target.value)} onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && addFromGoal()}
                     placeholder='e.g. "Learn Python for data science"' disabled={isLoading} style={{ ...inputBase, flex: 1, opacity: isLoading ? 0.7 : 1 }} />
                   <button onClick={addFromGoal} disabled={isLoading || !goalInput.trim()} style={{ background: "var(--accent)", color: "white", border: "none", borderRadius: 8, padding: "12px 20px", fontWeight: 600, fontSize: 14, cursor: isLoading ? "not-allowed" : "pointer", whiteSpace: "nowrap", boxShadow: "var(--shadow-sm)", transition: "background 200ms", display: "flex", alignItems: "center", gap: 8 }}>
                     {isLoading ? <Loader2 size={16} className="animate-spin" /> : "Build Path"}
@@ -204,7 +204,7 @@ export default function OnboardingPage() {
               {/* Streaming Skeleton Loaders */}
               {isLoading && object?.topics && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-                  {object.topics.map((t, i) => (
+                  {object.topics.map((_: any, i: number) => (
                     <div key={i} className="stagger-item skeleton" style={{ height: 56, borderRadius: 10, opacity: 0.7 }} />
                   ))}
                   <div className="skeleton" style={{ height: 56, borderRadius: 10, animationDelay: "200ms", opacity: 0.4 }} />
@@ -213,27 +213,27 @@ export default function OnboardingPage() {
 
               {/* Manual add */}
               <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
-                <input value={topicInput} onChange={(e) => setTopicInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addTopic()}
+                <input value={topicInput} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTopicInput(e.target.value)} onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && addTopic()}
                   placeholder="Or add a topic manually..." style={{ ...inputBase, flex: 1 }} />
                 <button onClick={addTopic} style={{ background: "var(--accent-subtle)", color: "var(--accent)", border: "1px solid var(--accent-muted)", borderRadius: 8, padding: "12px 18px", cursor: "pointer", transition: "all 200ms" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-muted)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "var(--accent-subtle)")}>
-                  <Plus size={20} strokeWidth={2.5}/>
+                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = "var(--bg-muted)")}
+                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = "var(--accent-subtle)")}>
+                  <Plus size={20} strokeWidth={2.5} />
                 </button>
               </div>
 
               {/* Topic list */}
               {state.topics.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 32 }}>
-                  {state.topics.map((t, i) => (
+                  {state.topics.map((t: any, i: number) => (
                     <div key={t.id} className="stagger-item" style={{ animationDelay: `${i * 50}ms`, background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: 10, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                         <span style={{ width: 26, height: 26, borderRadius: 8, background: "var(--accent-subtle)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>{i + 1}</span>
                         <span style={{ fontSize: 15, fontWeight: 500, color: "var(--text-primary)" }}>{t.name}</span>
                       </div>
                       <button onClick={() => removeTopic(t.id)} style={{ background: "var(--bg-subtle)", border: "none", borderRadius: 6, cursor: "pointer", color: "var(--text-tertiary)", padding: 6, display: "flex", transition: "all 150ms" }}
-                        onMouseEnter={e => { e.currentTarget.style.color = "var(--error)"; e.currentTarget.style.background = "var(--error-subtle)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.color = "var(--text-tertiary)"; e.currentTarget.style.background = "var(--bg-subtle)"; }}>
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--error)"; (e.currentTarget as HTMLElement).style.background = "var(--error-subtle)"; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-tertiary)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-subtle)"; }}>
                         <X size={16} strokeWidth={2.5} />
                       </button>
                     </div>
@@ -249,7 +249,7 @@ export default function OnboardingPage() {
 
               <button onClick={goNext} disabled={state.topics.length === 0}
                 style={{ width: "100%", background: state.topics.length > 0 ? "linear-gradient(135deg, var(--accent), var(--accent-hover))" : "var(--bg-muted)", color: state.topics.length > 0 ? "white" : "var(--text-disabled)", border: "none", borderRadius: 10, padding: "16px", fontWeight: 600, fontSize: 15, cursor: state.topics.length > 0 ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all 200ms ease", boxShadow: state.topics.length > 0 ? "var(--shadow-md)" : "none", marginTop: 32 }}>
-                Continue <ChevronRight size={18} strokeWidth={2.5}/>
+                Continue <ChevronRight size={18} strokeWidth={2.5} />
               </button>
             </div>
           )}
@@ -273,7 +273,7 @@ export default function OnboardingPage() {
                   <span style={{ fontSize: 32, fontWeight: 700, color: "var(--accent)", letterSpacing: "-0.5px" }}>{state.daily_hours}h</span>
                 </div>
                 <input type="range" min={0.5} max={8} step={0.5} value={state.daily_hours}
-                  onChange={(e) => setState((s) => ({ ...s, daily_hours: parseFloat(e.target.value) }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setState((s) => ({ ...s, daily_hours: parseFloat(e.target.value) }))}
                   style={{ width: "100%", accentColor: "var(--accent)", cursor: "pointer", height: 6 }} />
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--text-tertiary)", marginTop: 12, fontWeight: 500 }}>
                   <span>30 min</span><span>8 hours</span>
@@ -291,10 +291,10 @@ export default function OnboardingPage() {
                       <div key={day} style={{ textAlign: "center" }}>
                         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>{day}</div>
                         <input type="number" min={0} max={8} step={0.5} value={state.per_day_hours[day]}
-                          onChange={(e) => setState((s) => ({ ...s, per_day_hours: { ...s.per_day_hours, [day]: parseFloat(e.target.value) || 0 } }))}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setState((s) => ({ ...s, per_day_hours: { ...s.per_day_hours, [day]: parseFloat(e.target.value) || 0 } }))}
                           style={{ width: "100%", border: "1px solid var(--border-default)", borderRadius: 8, padding: "8px 4px", fontSize: 14, fontWeight: 500, textAlign: "center", background: "var(--bg-subtle)", color: "var(--text-primary)", outline: "none", transition: "border-color 200ms" }}
-                          onFocus={(e) => e.target.style.borderColor = "var(--accent)"}
-                          onBlur={(e) => e.target.style.borderColor = "var(--border-default)"} />
+                          onFocus={(e) => (e.target as HTMLElement).style.borderColor = "var(--accent)"}
+                          onBlur={(e) => (e.target as HTMLElement).style.borderColor = "var(--border-default)"} />
                       </div>
                     ))}
                   </div>
@@ -303,12 +303,12 @@ export default function OnboardingPage() {
 
               <div style={{ display: "flex", gap: 12 }}>
                 <button onClick={goBack} style={{ flex: 1, background: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border-default)", borderRadius: 10, padding: "16px", fontWeight: 600, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "background 200ms" }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-subtle)"}
-                  onMouseLeave={(e) => e.currentTarget.style.background = "var(--bg-surface)"}>
+                  onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.background = "var(--bg-subtle)"}
+                  onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.background = "var(--bg-surface)"}>
                   <ChevronLeft size={18} strokeWidth={2.5} /> Back
                 </button>
                 <button onClick={goNext} style={{ flex: 2, background: "linear-gradient(135deg, var(--accent), var(--accent-hover))", color: "white", border: "none", borderRadius: 10, padding: "16px", fontWeight: 600, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "var(--shadow-md)" }}>
-                  Continue <ChevronRight size={18} strokeWidth={2.5}/>
+                  Continue <ChevronRight size={18} strokeWidth={2.5} />
                 </button>
               </div>
             </div>
@@ -341,11 +341,11 @@ export default function OnboardingPage() {
                     <span style={{ fontSize: 32 }}>{opt.icon}</span>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                         <span style={{ fontWeight: 700, fontSize: 16, color: "var(--text-primary)", letterSpacing: "-0.2px" }}>{opt.label}</span>
+                        <span style={{ fontWeight: 700, fontSize: 16, color: "var(--text-primary)", letterSpacing: "-0.2px" }}>{opt.label}</span>
                       </div>
                       <p style={{ margin: "4px 0 0", fontSize: 13.5, color: "var(--text-tertiary)", lineHeight: 1.4 }}>{opt.desc}</p>
                     </div>
-                    {state.intensity === opt.value && <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center" }}><Check size={14} strokeWidth={3} color="white"/></div>}
+                    {state.intensity === opt.value && <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center" }}><Check size={14} strokeWidth={3} color="white" /></div>}
                   </button>
                 ))}
               </div>
@@ -368,12 +368,12 @@ export default function OnboardingPage() {
 
               <div style={{ display: "flex", gap: 12 }}>
                 <button onClick={goBack} style={{ flex: 1, background: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border-default)", borderRadius: 10, padding: "16px", fontWeight: 600, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "background 200ms" }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-subtle)"}
-                  onMouseLeave={(e) => e.currentTarget.style.background = "var(--bg-surface)"}>
+                  onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.background = "var(--bg-subtle)"}
+                  onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.background = "var(--bg-surface)"}>
                   <ChevronLeft size={18} strokeWidth={2.5} /> Back
                 </button>
                 <button onClick={goNext} style={{ flex: 2, background: "linear-gradient(135deg, var(--accent), var(--accent-hover))", color: "white", border: "none", borderRadius: 10, padding: "16px", fontWeight: 600, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "var(--shadow-md)" }}>
-                  Preview Schedule <ChevronRight size={18} strokeWidth={2.5}/>
+                  Preview Schedule <ChevronRight size={18} strokeWidth={2.5} />
                 </button>
               </div>
             </div>
@@ -386,10 +386,10 @@ export default function OnboardingPage() {
               <p style={{ fontSize: 15, color: "var(--text-secondary)", marginBottom: 32 }}>At this pace, you&apos;ll finish in ~<strong style={{ color: "var(--accent)" }}>{totalWeeks} weeks</strong>.</p>
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 10, marginBottom: 32 }}>
-                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, i) => (
+                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, i: number) => (
                   <div key={day} className="stagger-item" style={{ animationDelay: `${i * 60}ms`, background: "var(--bg-surface)", border: `1px solid ${i === 0 ? "var(--accent-muted)" : "var(--border-subtle)"}`, borderRadius: 10, padding: "12px 6px", textAlign: "center", boxShadow: i === 0 ? "0 4px 12px rgba(99,102,241,0.15)" : "var(--shadow-sm)", transform: i === 0 ? "translateY(-4px)" : "none", transition: "transform 300ms ease" }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: i === 0 ? "var(--accent)" : "var(--text-tertiary)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>{day}</div>
-                    {state.topics.slice(0, 2).map((t, ti) => (
+                    {state.topics.slice(0, 2).map((t: any, ti: number) => (
                       <div key={ti} style={{ fontSize: 10, background: "var(--bg-subtle)", border: "1px solid var(--border-subtle)", borderRadius: 4, padding: "4px", marginBottom: 6, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }}>
                         {t.name.split(" ")[0]}
                       </div>
@@ -413,14 +413,14 @@ export default function OnboardingPage() {
 
               <div style={{ display: "flex", gap: 12 }}>
                 <button onClick={goBack} style={{ flex: 1, background: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border-default)", borderRadius: 10, padding: "16px", fontWeight: 600, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "background 200ms" }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-subtle)"}
-                  onMouseLeave={(e) => e.currentTarget.style.background = "var(--bg-surface)"}>
+                  onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.background = "var(--bg-subtle)"}
+                  onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.background = "var(--bg-surface)"}>
                   <ChevronLeft size={18} strokeWidth={2.5} /> Adjust
                 </button>
                 <button onClick={handleFinish} disabled={saving} style={{ flex: 2, background: "linear-gradient(135deg, var(--accent), var(--accent-hover))", color: "white", border: "none", borderRadius: 10, padding: "16px", fontWeight: 600, fontSize: 15, cursor: saving ? "not-allowed" : "pointer", boxShadow: "var(--shadow-md)", transition: "transform 200ms", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-                  onMouseEnter={(e) => { if(!saving) (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
-                  onMouseLeave={(e) => { if(!saving) (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
-                  {saving ? <><Loader2 size={18} className="animate-spin"/> Saving...</> : <>Looks good — Start Learning →</>}
+                  onMouseEnter={(e) => { if (!saving) (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+                  onMouseLeave={(e) => { if (!saving) (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
+                  {saving ? <><Loader2 size={18} className="animate-spin" /> Saving...</> : <>Looks good — Start Learning →</>}
                 </button>
               </div>
             </div>

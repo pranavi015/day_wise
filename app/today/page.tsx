@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import TaskCard from "@/components/TaskCard";
 import FocusTimer from "@/components/FocusTimer";
@@ -25,20 +25,20 @@ export default function TodayPage() {
       const userId = authData.user.id;
 
       // Parallel fetch
-      const [
-        { data: profile },
-        { data: curricula },
-        { data: completions }
-      ] = await Promise.all([
+      const results = await Promise.all([
         supabase.from("profiles").select("*").eq("id", userId).single(),
         supabase.from("curricula").select("*").eq("user_id", userId).order("sort_order", { ascending: true }),
         supabase.from("task_completions").select("*").eq("user_id", userId)
-      ]);
+      ]) as any[];
+
+      const profile = results[0].data;
+      const curricula = results[1].data;
+      const completions = results[2].data;
 
       // Calculate Streak
       let currentStreak = 0;
-      if (completions && completions.length > 0) {
-        const uniqueDates = Array.from(new Set(completions.map(c => c.completed_date))).sort((a,b) => b.localeCompare(a));
+      if (completions && Array.isArray(completions) && completions.length > 0) {
+        const uniqueDates = Array.from(new Set(completions.map((c: { completed_date: string }) => c.completed_date))).sort((a,b) => b.localeCompare(a));
         let checkDate = new Date();
         // If today is not in there, check if yesterday is. If neither, streak is 0.
         const todayIso = checkDate.toISOString().split("T")[0];
@@ -91,7 +91,7 @@ export default function TodayPage() {
             if (iterDate.getTime() === targetDate.getTime()) {
               const topic = curricula[currentTopicIdx];
               const taskId = `${topic.id}_${todayStr}_${generatedTasks.length}`;
-              const isComplete = completions?.some(c => c.task_id === taskId) || false;
+              const isComplete = (completions as any[])?.some((c: any) => c.task_id === taskId) || false;
               
               generatedTasks.push({
                 id: taskId,
@@ -192,7 +192,7 @@ export default function TodayPage() {
             border: "1px solid var(--border-subtle)", borderRadius: 16, 
             padding: "20px 24px", boxShadow: "var(--shadow-sm)"
           }}>
-            <div style={{ display: "flex", justify-content: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-secondary)", display: "flex", justifyContent: "space-between", width: "100%" }}>
                 <span>{completed} of {total} tasks complete</span>
                 <span style={{ fontSize: 15, fontWeight: 700, color: allDone ? "var(--success)" : "var(--accent)" }}>

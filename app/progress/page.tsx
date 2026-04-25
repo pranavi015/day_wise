@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import { TrendingUp, Flame, BookOpen, Target, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -12,8 +12,8 @@ export default function ProgressPage() {
     topicsMastered: 0,
     adherenceRate: 0
   });
-  const [dailyData, setDailyData] = useState<any[]>([]);
-  const [topicData, setTopicData] = useState<any[]>([]);
+  const [dailyData, setDailyData] = useState<{ date: string; minutes_planned: number; minutes_spent: number }[]>([]);
+  const [topicData, setTopicData] = useState<{ name: string; mins: number }[]>([]);
 
   useEffect(() => {
     async function fetchProgress() {
@@ -25,24 +25,24 @@ export default function ProgressPage() {
       const userId = authData.user.id;
 
       // Parallel Data Fetching
-      const [
-        { data: profile },
-        { data: completions },
-        { data: sessions },
-        { data: curricula }
-      ] = await Promise.all([
+      const results = await Promise.all([
         supabase.from("profiles").select("schedule_json").eq("id", userId).single(),
         supabase.from("task_completions").select("*").eq("user_id", userId),
         supabase.from("focus_sessions").select("*").eq("user_id", userId).gte("completed_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
         supabase.from("curricula").select("*").eq("user_id", userId)
-      ]);
+      ]) as any[];
+
+      const profile = results[0].data;
+      const completions = results[1].data;
+      const sessions = results[2].data;
+      const curricula = results[3].data;
 
       const sched = profile?.schedule_json || {};
 
       // 1. Calculate Streak
       let currentStreak = 0;
-      if (completions && completions.length > 0) {
-        const uniqueDates = Array.from(new Set(completions.map(c => c.completed_date))).sort((a,b) => b.localeCompare(a));
+      if (completions && Array.isArray(completions) && completions.length > 0) {
+        const uniqueDates = Array.from(new Set(completions.map((c: { completed_date: string }) => c.completed_date))).sort((a,b) => b.localeCompare(a));
         let checkDate = new Date();
         const todayIso = checkDate.toISOString().split("T")[0];
         checkDate.setDate(checkDate.getDate() - 1);
