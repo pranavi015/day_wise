@@ -211,18 +211,30 @@ export default function TodayPage() {
       }
 
       // Mark complete
-      await supabase.from("task_completions").insert({
+      const { error } = await supabase.from("task_completions").insert({
         user_id: authData.user.id,
         task_id: id,
         topic_id: task.topic_id,
         completed_date: todayStr
       }).select().single();
+      
+      if (error) {
+        console.error("Failed to mark task complete:", error);
+        setToast({ show: true, text: "Error saving task completion.", streak: streak });
+        setTimeout(() => setToast(null), 4000);
+      }
     } else {
       // Mark incomplete
-      await supabase.from("task_completions").delete()
+      const { error } = await supabase.from("task_completions").delete()
         .eq("user_id", authData.user.id)
         .eq("task_id", id)
         .eq("completed_date", todayStr);
+        
+      if (error) {
+        console.error("Failed to mark task incomplete:", error);
+        setToast({ show: true, text: "Error updating task.", streak: streak });
+        setTimeout(() => setToast(null), 4000);
+      }
     }
   }
 

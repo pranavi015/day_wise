@@ -80,4 +80,78 @@ create policy "Users can delete own curricula"
   on public.curricula for delete
   using (auth.uid() = user_id);
 
+-- ── 3. TASK COMPLETIONS TABLE ─────────────────────────────
+create table if not exists public.task_completions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  task_id text not null,
+  topic_id uuid not null references public.curricula(id) on delete cascade,
+  completed_date date not null,
+  created_at timestamptz default now()
+);
+
+-- Enable RLS
+alter table public.task_completions enable row level security;
+
+-- Drop old policies first
+drop policy if exists "Users can view own task_completions" on public.task_completions;
+drop policy if exists "Users can insert own task_completions" on public.task_completions;
+drop policy if exists "Users can update own task_completions" on public.task_completions;
+drop policy if exists "Users can delete own task_completions" on public.task_completions;
+
+-- Recreate policies
+create policy "Users can view own task_completions"
+  on public.task_completions for select
+  using (auth.uid() = user_id);
+
+create policy "Users can insert own task_completions"
+  on public.task_completions for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update own task_completions"
+  on public.task_completions for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "Users can delete own task_completions"
+  on public.task_completions for delete
+  using (auth.uid() = user_id);
+
+
+-- ── 4. SR CARDS TABLE ─────────────────────────────────────
+create table if not exists public.sr_cards (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  topic_id uuid not null references public.curricula(id) on delete cascade,
+  next_review_date date not null,
+  created_at timestamptz default now()
+);
+
+-- Enable RLS
+alter table public.sr_cards enable row level security;
+
+-- Drop old policies first
+drop policy if exists "Users can view own sr_cards" on public.sr_cards;
+drop policy if exists "Users can insert own sr_cards" on public.sr_cards;
+drop policy if exists "Users can update own sr_cards" on public.sr_cards;
+drop policy if exists "Users can delete own sr_cards" on public.sr_cards;
+
+-- Recreate policies
+create policy "Users can view own sr_cards"
+  on public.sr_cards for select
+  using (auth.uid() = user_id);
+
+create policy "Users can insert own sr_cards"
+  on public.sr_cards for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update own sr_cards"
+  on public.sr_cards for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "Users can delete own sr_cards"
+  on public.sr_cards for delete
+  using (auth.uid() = user_id);
+
 -- ── DONE ──────────────────────────────────────────────────
