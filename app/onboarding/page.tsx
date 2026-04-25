@@ -125,11 +125,7 @@ export default function OnboardingPage() {
 
     if (profileError) {
       console.error("Error saving profile:", profileError);
-      if (profileError.code === "42501" || profileError.message?.includes("row-level security") || String(profileError).includes("403")) {
-        setError("Permission denied: Supabase RLS policies are not set up. Run supabase_rls_fix.sql in your Supabase SQL Editor.");
-      } else {
-        setError(`Failed to save profile: ${profileError.message}`);
-      }
+      setError(`Failed to save profile: ${profileError.message} (code: ${profileError.code ?? "unknown"})`);
       setSaving(false);
       return;
     }
@@ -147,11 +143,7 @@ export default function OnboardingPage() {
       const { error: curriculaError } = await supabase.from("curricula").insert(inserts);
       if (curriculaError) {
         console.error("Error saving curricula:", curriculaError);
-        if (curriculaError.code === "42501" || curriculaError.message?.includes("row-level security") || String(curriculaError).includes("403")) {
-          setError("Permission denied: Supabase RLS policies are not set up. Run supabase_rls_fix.sql in your Supabase SQL Editor.");
-        } else {
-          setError(`Failed to save your roadmap: ${curriculaError.message}`);
-        }
+        setError(`Failed to save your roadmap: ${curriculaError.message} (code: ${curriculaError.code ?? "unknown"})`);
         setSaving(false);
         return;
       }
