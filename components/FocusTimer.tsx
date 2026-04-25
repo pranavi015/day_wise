@@ -23,62 +23,83 @@ export default function FocusTimer() {
   const mins = String(Math.floor(seconds / 60)).padStart(2, "0");
   const secs = String(seconds % 60).padStart(2, "0");
   const progress = 1 - seconds / (25 * 60);
-  const circumference = 2 * Math.PI * 20;
+  const circumference = 2 * Math.PI * 22;
   function reset() { setRunning(false); setSeconds(25 * 60); }
 
   const btnStyle = (key: string, primary?: boolean): React.CSSProperties => ({
-    width: 34, height: 34, borderRadius: 7, border: "none", cursor: "pointer",
+    width: 36, height: 36, borderRadius: 10, border: "none", cursor: "pointer",
     display: "flex", alignItems: "center", justifyContent: "center",
     background: hoverBtn === key ? (primary ? "var(--accent-hover)" : "var(--bg-muted)") : (primary ? "var(--accent)" : "var(--bg-subtle)"),
     color: primary ? "white" : "var(--text-secondary)",
-    transform: hoverBtn === key ? "scale(0.95)" : "scale(1)",  /* DISNEY 2: ANTICIPATION */
+    transform: hoverBtn === key ? "scale(0.95)" : "scale(1)", 
     transition: "all 150ms ease",
+    boxShadow: primary ? "var(--shadow-sm)" : "none"
   });
 
   return (
-    <div style={{ position: "fixed", bottom: 0, left: 216, right: 0, background: "var(--bg-surface)", borderTop: "1px solid var(--border-subtle)", zIndex: 30 }} className="timer-bar">
-      {running && (
-        <div style={{ height: 2, background: "var(--bg-subtle)", overflow: "hidden" }}>
-          <div style={{ height: "100%", background: "var(--accent)", width: `${progress * 100}%`, transition: "width 1s linear" }} />
-        </div>
-      )}
-
+    <div className="timer-widget" style={{ 
+      position: "fixed", zIndex: 50, transition: "all 300ms cubic-bezier(0.16, 1, 0.3, 1)",
+      filter: "drop-shadow(var(--shadow-lg))" 
+    }}>
       {isOpen ? (
-        <div className="modal-enter" style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 20 }}>
-          <div style={{ position: "relative", width: 50, height: 50, flexShrink: 0 }}>
-            <svg width="50" height="50" viewBox="0 0 50 50">
-              <circle cx="25" cy="25" r="20" fill="none" stroke="var(--border-subtle)" strokeWidth="3" />
-              <circle cx="25" cy="25" r="20" fill="none" stroke="var(--accent)" strokeWidth="3"
+        <div className="modal-enter" style={{ 
+          background: "var(--bg-surface)", 
+          border: "1px solid var(--border-subtle)", 
+          borderRadius: 20, 
+          padding: "20px", 
+          display: "flex", alignItems: "center", gap: 20,
+          width: 320
+        }}>
+          <div style={{ position: "relative", width: 52, height: 52, flexShrink: 0 }}>
+            <svg width="52" height="52" viewBox="0 0 52 52">
+              <circle cx="26" cy="26" r="22" fill="none" stroke="var(--bg-muted)" strokeWidth="4" />
+              <circle cx="26" cy="26" r="22" fill="none" stroke="var(--accent)" strokeWidth="4"
                 strokeDasharray={`${circumference}`} strokeDashoffset={`${circumference * (1 - progress)}`}
-                strokeLinecap="round" transform="rotate(-90 25 25)"
+                strokeLinecap="round" transform="rotate(-90 26 26)"
                 style={{ transition: "stroke-dashoffset 1s linear" }} />
             </svg>
-            <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>{mins}:{secs}</span>
+            <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>{mins}:{secs}</span>
           </div>
+          
           <div style={{ flex: 1 }}>
-            <p style={{ fontWeight: 500, fontSize: 13, color: "var(--text-primary)" }}>Focus Session</p>
-            <p style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: 1 }}>25-minute Pomodoro</p>
+            <p style={{ fontWeight: 600, fontSize: 14, color: "var(--text-primary)", letterSpacing: "-0.2px" }}>Focus Session</p>
+            <p style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 2 }}>25m Pomodoro</p>
           </div>
-          <div style={{ display: "flex", gap: 6 }}>
-            <button onMouseEnter={() => setHoverBtn("play")} onMouseLeave={() => setHoverBtn(null)} onClick={() => setRunning((r) => !r)} style={btnStyle("play", true)}>
-              {running ? <Pause size={14} /> : <Play size={14} />}
-            </button>
-            <button onMouseEnter={() => setHoverBtn("reset")} onMouseLeave={() => setHoverBtn(null)} onClick={reset} style={btnStyle("reset")}><RotateCcw size={13} /></button>
-            <button onMouseEnter={() => setHoverBtn("close")} onMouseLeave={() => setHoverBtn(null)} onClick={() => setIsOpen(false)} style={btnStyle("close")}><X size={13} /></button>
+          
+          <div style={{ display: "flex", gap: 6, flexDirection: "column" }}>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button onMouseEnter={() => setHoverBtn("play")} onMouseLeave={() => setHoverBtn(null)} onClick={() => setRunning((r) => !r)} style={btnStyle("play", true)}>
+                {running ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
+              </button>
+              <button onMouseEnter={() => setHoverBtn("reset")} onMouseLeave={() => setHoverBtn(null)} onClick={reset} style={btnStyle("reset")}><RotateCcw size={15} /></button>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div style={{ padding: "10px 20px" }}>
-          <button
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--accent)"; (e.currentTarget as HTMLElement).style.color = "white"; (e.currentTarget as HTMLElement).style.transform = "scale(0.98)"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-subtle)"; (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)"; (e.currentTarget as HTMLElement).style.transform = "scale(1)"; }}
-            onClick={() => setIsOpen(true)}
-            style={{ width: "100%", background: "var(--bg-subtle)", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)", borderRadius: 7, padding: "9px", fontWeight: 500, fontSize: 13.5, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, transition: "all 180ms ease" }}>
-            <Timer size={15} /> Start Focus Session
+          
+          <button onClick={() => setIsOpen(false)} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", color: "var(--text-tertiary)", cursor: "pointer", padding: 4 }}>
+            <X size={14} />
           </button>
         </div>
+      ) : (
+        <button
+          className="modal-enter"
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(0.97) translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "var(--shadow-xl)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1) translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "var(--shadow-md)"; }}
+          onClick={() => setIsOpen(true)}
+          style={{ 
+            background: "linear-gradient(135deg, var(--accent), var(--accent-hover))", 
+            color: "white", border: "none", borderRadius: 30, 
+            padding: "12px 20px", fontWeight: 600, fontSize: 14, 
+            cursor: "pointer", display: "flex", alignItems: "center", gap: 8, 
+            transition: "all 250ms cubic-bezier(0.16, 1, 0.3, 1)",
+            boxShadow: "var(--shadow-md)", borderTop: "1px solid rgba(255,255,255,0.2)"
+          }}>
+          <Timer size={18} /> Start Session
+        </button>
       )}
-      <style>{`.timer-bar { left: 216px; } @media (max-width: 768px) { .timer-bar { left: 0; bottom: 56px; } }`}</style>
+      <style>{`
+        .timer-widget { bottom: 32px; right: 32px; } 
+        @media (max-width: 768px) { .timer-widget { bottom: 84px; right: 16px; } }
+      `}</style>
     </div>
   );
 }

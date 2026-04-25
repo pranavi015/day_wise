@@ -72,93 +72,101 @@ export default function OnboardingPage() {
   ) || 4;
 
   const inputBase: React.CSSProperties = {
-    border: "1px solid var(--border-subtle)", borderRadius: 7, padding: "10px 14px",
-    fontSize: 13.5, color: "var(--text-primary)", background: "var(--bg-base)", outline: "none",
+    border: "1px solid var(--border-default)", borderRadius: 8, padding: "12px 16px",
+    fontSize: 14, color: "var(--text-primary)", background: "var(--bg-surface)", outline: "none",
+    boxShadow: "var(--shadow-sm)", transition: "all 200ms ease"
   };
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-base)", display: "flex", flexDirection: "column" }}>
       {/* Header */}
-      <div style={{ background: "var(--sidebar-bg)", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 24, height: 24, borderRadius: 6, background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Sparkles size={12} color="white" />
+      <div style={{ background: "var(--sidebar-bg)", padding: "16px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg, var(--accent), var(--accent-hover))", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(99,102,241,0.25)" }}>
+            <Sparkles size={14} color="white" />
           </div>
-          <span style={{ color: "rgba(255,255,255,0.9)", fontWeight: 600, fontSize: 15, letterSpacing: "-0.3px" }}>daywise</span>
+          <span style={{ color: "rgba(255,255,255,0.95)", fontWeight: 700, fontSize: 16, letterSpacing: "-0.4px" }}>daywise</span>
         </div>
-        <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12.5 }}>
-          {step <= 3 ? `Step ${step} of 3` : "Preview"}
+        <span style={{ color: "var(--sidebar-text)", fontSize: 13, fontWeight: 500 }}>
+          {step <= 3 ? `Step ${step} of 3` : "Final Preview"}
         </span>
       </div>
 
       {/* Step indicator */}
-      <div style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)", padding: "12px 24px", display: "flex", gap: 8, alignItems: "center" }}>
+      <div style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border-subtle)", padding: "16px 32px", display: "flex", gap: 12, alignItems: "center", justifyContent: "center" }}>
         {[1, 2, 3].map((s) => (
-          <div key={s} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div key={s} style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{
-              width: 26, height: 26, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600,
+              width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700,
               background: s < step ? "var(--success)" : s === step ? "var(--accent)" : "var(--bg-muted)",
               color: s <= step ? "white" : "var(--text-tertiary)",
+              boxShadow: s === step ? "var(--shadow-glow)" : "none", transition: "all 300ms ease"
             }}>
-              {s < step ? <Check size={13} /> : s}
+              {s < step ? <Check size={16} strokeWidth={3} /> : s}
             </div>
-            <span style={{ fontSize: 13, color: s === step ? "var(--text-primary)" : "var(--text-tertiary)", fontWeight: s === step ? 500 : 400 }}>
-              {s === 1 ? "Topics" : s === 2 ? "Schedule" : "Style"}
+            <span style={{ fontSize: 14, color: s === step ? "var(--text-primary)" : "var(--text-tertiary)", fontWeight: s === step ? 600 : 500 }}>
+              {s === 1 ? "Goals" : s === 2 ? "Schedule" : "Pacing"}
             </span>
-            {s < 3 && <div style={{ width: 28, height: 1, background: s < step ? "var(--success)" : "var(--border-subtle)" }} />}
+            {s < 3 && <div style={{ width: 32, height: 2, background: s < step ? "var(--success)" : "var(--border-subtle)", transition: "background 300ms ease" }} />}
           </div>
         ))}
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "40px 24px" }}>
-        <div key={step} className={animClass} style={{ width: "100%", maxWidth: 600 }}>
+      <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "48px 24px" }}>
+        <div key={step} className={animClass} style={{ width: "100%", maxWidth: 640 }}>
 
           {/* STEP 1: Topics */}
           {step === 1 && (
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: "var(--accent-subtle)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <BookOpen size={20} color="var(--accent)" />
+              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 12 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: "var(--accent)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "var(--shadow-md)" }}>
+                  <BookOpen size={24} />
                 </div>
                 <div>
-                  <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", margin: 0, letterSpacing: "-0.3px" }}>What do you want to learn?</h1>
-                  <p style={{ fontSize: 13, color: "var(--text-tertiary)", margin: 0 }}>You can adjust topics anytime later.</p>
+                  <h1 style={{ fontSize: 28, fontWeight: 700, color: "var(--text-primary)", margin: 0, letterSpacing: "-0.5px" }}>What do you want to learn?</h1>
+                  <p style={{ fontSize: 14.5, color: "var(--text-secondary)", margin: "4px 0 0" }}>You can adjust topics anytime later.</p>
                 </div>
               </div>
 
               {/* AI shortcut */}
-              <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: 10, padding: 18, marginTop: 22, marginBottom: 14 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 10 }}>✨ Let AI suggest topics</p>
-                <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ background: "linear-gradient(145deg, var(--bg-surface), var(--bg-subtle))", border: "1px solid var(--border-default)", borderRadius: 12, padding: 24, marginTop: 32, marginBottom: 16, boxShadow: "var(--shadow-sm)" }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                  <Sparkles size={16} color="var(--accent)" /> Let AI suggest a path
+                </p>
+                <div style={{ display: "flex", gap: 10 }}>
                   <input value={goalInput} onChange={(e) => setGoalInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addFromGoal()}
                     placeholder='e.g. "Learn Python for data science"' style={{ ...inputBase, flex: 1 }} />
-                  <button onClick={addFromGoal} style={{ background: "var(--accent)", color: "white", border: "none", borderRadius: 7, padding: "10px 18px", fontWeight: 500, fontSize: 13.5, cursor: "pointer", whiteSpace: "nowrap" }}>
-                    Build
+                  <button onClick={addFromGoal} style={{ background: "var(--accent)", color: "white", border: "none", borderRadius: 8, padding: "12px 20px", fontWeight: 600, fontSize: 14, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "var(--shadow-sm)", transition: "background 200ms" }}>
+                    Build Path
                   </button>
                 </div>
               </div>
 
               {/* Manual add */}
-              <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+              <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
                 <input value={topicInput} onChange={(e) => setTopicInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addTopic()}
                   placeholder="Or add a topic manually..." style={{ ...inputBase, flex: 1 }} />
-                <button onClick={addTopic} style={{ background: "var(--accent-subtle)", color: "var(--accent)", border: "1px solid var(--accent-muted)", borderRadius: 7, padding: "10px 14px", cursor: "pointer" }}>
-                  <Plus size={17} />
+                <button onClick={addTopic} style={{ background: "var(--accent-subtle)", color: "var(--accent)", border: "1px solid var(--accent-muted)", borderRadius: 8, padding: "12px 18px", cursor: "pointer", transition: "all 200ms" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-muted)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "var(--accent-subtle)")}>
+                  <Plus size={20} strokeWidth={2.5}/>
                 </button>
               </div>
 
               {/* Topic list */}
               {state.topics.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 22 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 32 }}>
                   {state.topics.map((t, i) => (
-                    <div key={t.id} className="stagger-item" style={{ animationDelay: `${i * 50}ms`, background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={{ width: 22, height: 22, borderRadius: 6, background: "var(--accent-subtle)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: "var(--accent)" }}>{i + 1}</span>
-                        <span style={{ fontSize: 13.5, fontWeight: 500, color: "var(--text-primary)" }}>{t.name}</span>
+                    <div key={t.id} className="stagger-item" style={{ animationDelay: `${i * 50}ms`, background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: 10, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                        <span style={{ width: 26, height: 26, borderRadius: 8, background: "var(--accent-subtle)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>{i + 1}</span>
+                        <span style={{ fontSize: 15, fontWeight: 500, color: "var(--text-primary)" }}>{t.name}</span>
                       </div>
-                      <button onClick={() => removeTopic(t.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-tertiary)", padding: 4, display: "flex" }}>
-                        <X size={15} />
+                      <button onClick={() => removeTopic(t.id)} style={{ background: "var(--bg-subtle)", border: "none", borderRadius: 6, cursor: "pointer", color: "var(--text-tertiary)", padding: 6, display: "flex", transition: "all 150ms" }}
+                        onMouseEnter={e => { e.currentTarget.style.color = "var(--error)"; e.currentTarget.style.background = "var(--error-subtle)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.color = "var(--text-tertiary)"; e.currentTarget.style.background = "var(--bg-subtle)"; }}>
+                        <X size={16} strokeWidth={2.5} />
                       </button>
                     </div>
                   ))}
@@ -166,14 +174,14 @@ export default function OnboardingPage() {
               )}
 
               {state.topics.length === 0 && (
-                <div style={{ textAlign: "center", padding: "28px 0", color: "var(--text-tertiary)", fontSize: 13.5 }}>
+                <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-tertiary)", fontSize: 14.5, background: "var(--bg-surface)", border: "1px dashed var(--border-strong)", borderRadius: 12 }}>
                   No topics yet — add one above to get started.
                 </div>
               )}
 
               <button onClick={goNext} disabled={state.topics.length === 0}
-                style={{ width: "100%", background: state.topics.length > 0 ? "var(--accent)" : "var(--bg-muted)", color: state.topics.length > 0 ? "white" : "var(--text-disabled)", border: "none", borderRadius: 8, padding: "13px", fontWeight: 500, fontSize: 14, cursor: state.topics.length > 0 ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all 150ms ease" }}>
-                Continue <ChevronRight size={17} />
+                style={{ width: "100%", background: state.topics.length > 0 ? "linear-gradient(135deg, var(--accent), var(--accent-hover))" : "var(--bg-muted)", color: state.topics.length > 0 ? "white" : "var(--text-disabled)", border: "none", borderRadius: 10, padding: "16px", fontWeight: 600, fontSize: 15, cursor: state.topics.length > 0 ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all 200ms ease", boxShadow: state.topics.length > 0 ? "var(--shadow-md)" : "none", marginTop: 32 }}>
+                Continue <ChevronRight size={18} strokeWidth={2.5}/>
               </button>
             </div>
           )}
@@ -181,54 +189,58 @@ export default function OnboardingPage() {
           {/* STEP 2: Schedule */}
           {step === 2 && (
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: "var(--accent-subtle)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Clock size={20} color="var(--accent)" />
+              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 32 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: "var(--accent)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "var(--shadow-md)" }}>
+                  <Clock size={24} />
                 </div>
                 <div>
-                  <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", margin: 0, letterSpacing: "-0.3px" }}>How much time per day?</h1>
-                  <p style={{ fontSize: 13, color: "var(--text-tertiary)", margin: 0 }}>We&apos;ll never overload a day.</p>
+                  <h1 style={{ fontSize: 28, fontWeight: 700, color: "var(--text-primary)", margin: 0, letterSpacing: "-0.5px" }}>How much time per day?</h1>
+                  <p style={{ fontSize: 14.5, color: "var(--text-secondary)", margin: "4px 0 0" }}>We&apos;ll never overload a day.</p>
                 </div>
               </div>
 
-              <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: 10, padding: 20, marginBottom: 14 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                  <span style={{ fontWeight: 500, fontSize: 13.5, color: "var(--text-secondary)" }}>Daily hours</span>
-                  <span style={{ fontSize: 22, fontWeight: 700, color: "var(--accent)" }}>{state.daily_hours}h</span>
+              <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: 12, padding: 24, marginBottom: 20, boxShadow: "var(--shadow-sm)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                  <span style={{ fontWeight: 600, fontSize: 15, color: "var(--text-secondary)" }}>Base daily hours</span>
+                  <span style={{ fontSize: 32, fontWeight: 700, color: "var(--accent)", letterSpacing: "-0.5px" }}>{state.daily_hours}h</span>
                 </div>
                 <input type="range" min={0.5} max={8} step={0.5} value={state.daily_hours}
                   onChange={(e) => setState((s) => ({ ...s, daily_hours: parseFloat(e.target.value) }))}
-                  style={{ width: "100%", accentColor: "var(--accent)" }} />
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--text-tertiary)", marginTop: 4 }}>
+                  style={{ width: "100%", accentColor: "var(--accent)", cursor: "pointer", height: 6 }} />
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--text-tertiary)", marginTop: 12, fontWeight: 500 }}>
                   <span>30 min</span><span>8 hours</span>
                 </div>
               </div>
 
-              <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: 10, padding: 18, marginBottom: 22 }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-                  <input type="checkbox" checked={state.weekly_varies} onChange={(e) => setState((s) => ({ ...s, weekly_varies: e.target.checked }))} style={{ accentColor: "var(--accent)", width: 15, height: 15 }} />
-                  <span style={{ fontSize: 13.5, fontWeight: 500, color: "var(--text-secondary)" }}>My schedule varies by day</span>
+              <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: 12, padding: 24, marginBottom: 32, boxShadow: "var(--shadow-sm)" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+                  <input type="checkbox" checked={state.weekly_varies} onChange={(e) => setState((s) => ({ ...s, weekly_varies: e.target.checked }))} style={{ accentColor: "var(--accent)", width: 18, height: 18, cursor: "pointer" }} />
+                  <span style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>My schedule varies by day</span>
                 </label>
                 {state.weekly_varies && (
-                  <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}>
+                  <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 10 }}>
                     {DAYS.map((day) => (
                       <div key={day} style={{ textAlign: "center" }}>
-                        <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginBottom: 4 }}>{day}</div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>{day}</div>
                         <input type="number" min={0} max={8} step={0.5} value={state.per_day_hours[day]}
                           onChange={(e) => setState((s) => ({ ...s, per_day_hours: { ...s.per_day_hours, [day]: parseFloat(e.target.value) || 0 } }))}
-                          style={{ width: "100%", border: "1px solid var(--border-subtle)", borderRadius: 6, padding: "6px 4px", fontSize: 12, textAlign: "center", background: "var(--bg-base)", color: "var(--text-primary)" }} />
+                          style={{ width: "100%", border: "1px solid var(--border-default)", borderRadius: 8, padding: "8px 4px", fontSize: 14, fontWeight: 500, textAlign: "center", background: "var(--bg-subtle)", color: "var(--text-primary)", outline: "none", transition: "border-color 200ms" }}
+                          onFocus={(e) => e.target.style.borderColor = "var(--accent)"}
+                          onBlur={(e) => e.target.style.borderColor = "var(--border-default)"} />
                       </div>
                     ))}
                   </div>
                 )}
               </div>
 
-              <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={goBack} style={{ flex: 1, background: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "13px", fontWeight: 500, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                  <ChevronLeft size={17} /> Back
+              <div style={{ display: "flex", gap: 12 }}>
+                <button onClick={goBack} style={{ flex: 1, background: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border-default)", borderRadius: 10, padding: "16px", fontWeight: 600, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "background 200ms" }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-subtle)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "var(--bg-surface)"}>
+                  <ChevronLeft size={18} strokeWidth={2.5} /> Back
                 </button>
-                <button onClick={goNext} style={{ flex: 2, background: "var(--accent)", color: "white", border: "none", borderRadius: 8, padding: "13px", fontWeight: 500, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                  Continue <ChevronRight size={17} />
+                <button onClick={goNext} style={{ flex: 2, background: "linear-gradient(135deg, var(--accent), var(--accent-hover))", color: "white", border: "none", borderRadius: 10, padding: "16px", fontWeight: 600, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "var(--shadow-md)" }}>
+                  Continue <ChevronRight size={18} strokeWidth={2.5}/>
                 </button>
               </div>
             </div>
@@ -237,59 +249,63 @@ export default function OnboardingPage() {
           {/* STEP 3: Learning style */}
           {step === 3 && (
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: "var(--accent-subtle)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Zap size={20} color="var(--accent)" />
+              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 32 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: "var(--accent)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "var(--shadow-md)" }}>
+                  <Zap size={24} />
                 </div>
                 <div>
-                  <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", margin: 0, letterSpacing: "-0.3px" }}>Pick your learning style</h1>
-                  <p style={{ fontSize: 13, color: "var(--text-tertiary)", margin: 0 }}>You can change this anytime.</p>
+                  <h1 style={{ fontSize: 28, fontWeight: 700, color: "var(--text-primary)", margin: 0, letterSpacing: "-0.5px" }}>Pick your learning style</h1>
+                  <p style={{ fontSize: 14.5, color: "var(--text-secondary)", margin: "4px 0 0" }}>You can change this anytime.</p>
                 </div>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
                 {intensityOptions.map((opt) => (
                   <button key={opt.value} onClick={() => setState((s) => ({ ...s, intensity: opt.value }))}
                     style={{
                       background: state.intensity === opt.value ? "var(--accent-subtle)" : "var(--bg-surface)",
-                      border: `1.5px solid ${state.intensity === opt.value ? "var(--accent)" : "var(--border-subtle)"}`,
-                      borderRadius: 10, padding: "14px 16px", cursor: "pointer", textAlign: "left",
-                      display: "flex", alignItems: "center", gap: 14, transition: "all 150ms ease-out"
+                      border: `2px solid ${state.intensity === opt.value ? "var(--accent)" : "var(--border-subtle)"}`,
+                      boxShadow: state.intensity === opt.value ? "var(--shadow-md)" : "var(--shadow-sm)",
+                      borderRadius: 12, padding: "18px 20px", cursor: "pointer", textAlign: "left",
+                      display: "flex", alignItems: "center", gap: 16, transition: "all 200ms cubic-bezier(0.16, 1, 0.3, 1)",
+                      transform: state.intensity === opt.value ? "translateY(-2px)" : "translateY(0)"
                     }}>
-                    <span style={{ fontSize: 26 }}>{opt.icon}</span>
+                    <span style={{ fontSize: 32 }}>{opt.icon}</span>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontWeight: 600, fontSize: 14, color: "var(--text-primary)" }}>{opt.label}</span>
+                         <span style={{ fontWeight: 700, fontSize: 16, color: "var(--text-primary)", letterSpacing: "-0.2px" }}>{opt.label}</span>
                       </div>
-                      <p style={{ margin: "3px 0 0", fontSize: 12.5, color: "var(--text-tertiary)" }}>{opt.desc}</p>
+                      <p style={{ margin: "4px 0 0", fontSize: 13.5, color: "var(--text-tertiary)", lineHeight: 1.4 }}>{opt.desc}</p>
                     </div>
-                    {state.intensity === opt.value && <Check size={16} color="var(--accent)" />}
+                    {state.intensity === opt.value && <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center" }}><Check size={14} strokeWidth={3} color="white"/></div>}
                   </button>
                 ))}
               </div>
 
               {/* Spaced repetition toggle */}
-              <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: 10, padding: 18, marginBottom: 22 }}>
+              <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: 12, padding: 24, marginBottom: 32, boxShadow: "var(--shadow-sm)" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div>
-                    <p style={{ margin: 0, fontWeight: 500, fontSize: 13.5, color: "var(--text-primary)" }}>Spaced Repetition</p>
-                    <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--text-tertiary)", maxWidth: 360 }}>
-                      Automatically schedule reviews at the best time to help you remember.
+                    <p style={{ margin: 0, fontWeight: 600, fontSize: 15, color: "var(--text-primary)" }}>Spaced Repetition</p>
+                    <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-tertiary)", maxWidth: 360 }}>
+                      Automatically schedule reviews at the optimal time to guarantee retention.
                     </p>
                   </div>
                   <button onClick={() => setState((s) => ({ ...s, sr_enabled: !s.sr_enabled }))}
-                    style={{ width: 46, height: 25, borderRadius: 13, border: "none", cursor: "pointer", background: state.sr_enabled ? "var(--accent)" : "var(--border-default)", position: "relative", transition: "background 200ms", flexShrink: 0 }}>
-                    <div style={{ width: 19, height: 19, borderRadius: "50%", background: "white", position: "absolute", top: 3, left: state.sr_enabled ? 24 : 3, transition: "left 200ms" }} />
+                    style={{ width: 50, height: 28, borderRadius: 14, border: "none", cursor: "pointer", background: state.sr_enabled ? "var(--accent)" : "var(--border-strong)", position: "relative", transition: "background 250ms", flexShrink: 0 }}>
+                    <div style={{ width: 22, height: 22, borderRadius: "50%", background: "white", position: "absolute", top: 3, left: state.sr_enabled ? 25 : 3, transition: "left 250ms cubic-bezier(0.34,1.56,0.64,1)", boxShadow: "0 2px 4px rgba(0,0,0,0.2)" }} />
                   </button>
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={goBack} style={{ flex: 1, background: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "13px", fontWeight: 500, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                  <ChevronLeft size={17} /> Back
+              <div style={{ display: "flex", gap: 12 }}>
+                <button onClick={goBack} style={{ flex: 1, background: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border-default)", borderRadius: 10, padding: "16px", fontWeight: 600, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "background 200ms" }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-subtle)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "var(--bg-surface)"}>
+                  <ChevronLeft size={18} strokeWidth={2.5} /> Back
                 </button>
-                <button onClick={goNext} style={{ flex: 2, background: "var(--accent)", color: "white", border: "none", borderRadius: 8, padding: "13px", fontWeight: 500, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                  Preview Schedule <ChevronRight size={17} />
+                <button onClick={goNext} style={{ flex: 2, background: "linear-gradient(135deg, var(--accent), var(--accent-hover))", color: "white", border: "none", borderRadius: 10, padding: "16px", fontWeight: 600, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "var(--shadow-md)" }}>
+                  Preview Schedule <ChevronRight size={18} strokeWidth={2.5}/>
                 </button>
               </div>
             </div>
@@ -297,39 +313,45 @@ export default function OnboardingPage() {
 
           {/* STEP 4: Preview */}
           {step === 4 && (
-            <div>
-              <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 4px", letterSpacing: "-0.3px" }}>Your 7-day preview</h1>
-              <p style={{ fontSize: 13, color: "var(--text-tertiary)", marginBottom: 22 }}>At this pace, you&apos;ll finish in ~{totalWeeks} weeks.</p>
+            <div className="stagger-item">
+              <h1 style={{ fontSize: 32, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px", letterSpacing: "-0.8px" }}>Your 7-day preview</h1>
+              <p style={{ fontSize: 15, color: "var(--text-secondary)", marginBottom: 32 }}>At this pace, you&apos;ll finish in ~<strong style={{ color: "var(--accent)" }}>{totalWeeks} weeks</strong>.</p>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8, marginBottom: 22 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 10, marginBottom: 32 }}>
                 {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, i) => (
-                  <div key={day} className="stagger-item" style={{ animationDelay: `${i * 50}ms`, background: "var(--bg-surface)", border: `1px solid ${i === 0 ? "var(--accent-muted)" : "var(--border-subtle)"}`, borderRadius: 8, padding: "10px 6px", textAlign: "center" }}>
-                    <div style={{ fontSize: 10, fontWeight: 600, color: i === 0 ? "var(--accent)" : "var(--text-tertiary)", marginBottom: 7 }}>{day}</div>
+                  <div key={day} className="stagger-item" style={{ animationDelay: `${i * 60}ms`, background: "var(--bg-surface)", border: `1px solid ${i === 0 ? "var(--accent-muted)" : "var(--border-subtle)"}`, borderRadius: 10, padding: "12px 6px", textAlign: "center", boxShadow: i === 0 ? "0 4px 12px rgba(99,102,241,0.15)" : "var(--shadow-sm)", transform: i === 0 ? "translateY(-4px)" : "none", transition: "transform 300ms ease" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: i === 0 ? "var(--accent)" : "var(--text-tertiary)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>{day}</div>
                     {state.topics.slice(0, 2).map((t, ti) => (
-                      <div key={ti} style={{ fontSize: 9.5, background: "var(--accent-subtle)", borderRadius: 3, padding: "2px 4px", marginBottom: 3, color: "var(--accent)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <div key={ti} style={{ fontSize: 10, background: "var(--bg-subtle)", border: "1px solid var(--border-subtle)", borderRadius: 4, padding: "4px", marginBottom: 6, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }}>
                         {t.name.split(" ")[0]}
                       </div>
                     ))}
-                    <div style={{ fontSize: 10, color: "var(--text-tertiary)", marginTop: 5 }}>
+                    <div style={{ fontSize: 12, color: "var(--text-primary)", marginTop: 8, fontWeight: 700 }}>
                       {state.weekly_varies ? state.per_day_hours[day as keyof typeof state.per_day_hours] : state.daily_hours}h
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div style={{ background: "var(--accent-subtle)", border: "1px solid var(--accent-muted)", borderRadius: 8, padding: "14px 16px", marginBottom: 22, display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 20 }}>📅</span>
+              <div style={{ background: "linear-gradient(135deg, var(--bg-surface), var(--accent-subtle))", border: "1px solid var(--accent-muted)", borderRadius: 12, padding: "20px 24px", marginBottom: 32, display: "flex", alignItems: "center", gap: 16, boxShadow: "var(--shadow-md)" }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "white", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                  <span style={{ fontSize: 22 }}>📅</span>
+                </div>
                 <div>
-                  <p style={{ margin: 0, fontWeight: 600, fontSize: 13.5, color: "var(--text-primary)" }}>Looks achievable</p>
-                  <p style={{ margin: 0, fontSize: 12.5, color: "var(--text-tertiary)" }}>{state.topics.length} topics · {state.weekly_varies ? "Custom schedule" : `${state.daily_hours}h/day`} · {state.intensity} pace</p>
+                  <p style={{ margin: 0, fontWeight: 700, fontSize: 15, color: "var(--text-primary)", letterSpacing: "-0.2px" }}>Looks achievable</p>
+                  <p style={{ margin: "2px 0 0", fontSize: 13.5, color: "var(--text-secondary)" }}>{state.topics.length} topics · {state.weekly_varies ? "Custom schedule" : `${state.daily_hours}h/day`} · {state.intensity} pace</p>
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={goBack} style={{ flex: 1, background: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "13px", fontWeight: 500, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                  <ChevronLeft size={17} /> Adjust
+              <div style={{ display: "flex", gap: 12 }}>
+                <button onClick={goBack} style={{ flex: 1, background: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border-default)", borderRadius: 10, padding: "16px", fontWeight: 600, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "background 200ms" }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-subtle)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "var(--bg-surface)"}>
+                  <ChevronLeft size={18} strokeWidth={2.5} /> Adjust
                 </button>
-                <button onClick={handleFinish} style={{ flex: 2, background: "var(--accent)", color: "white", border: "none", borderRadius: 8, padding: "13px", fontWeight: 500, fontSize: 14, cursor: "pointer" }}>
+                <button onClick={handleFinish} style={{ flex: 2, background: "linear-gradient(135deg, var(--accent), var(--accent-hover))", color: "white", border: "none", borderRadius: 10, padding: "16px", fontWeight: 600, fontSize: 15, cursor: "pointer", boxShadow: "var(--shadow-md)", transition: "transform 200ms" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
                   Looks good — Start Learning →
                 </button>
               </div>
