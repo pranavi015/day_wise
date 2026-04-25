@@ -88,6 +88,8 @@ export default function OnboardingPage() {
 
   function addFromGoal() {
     if (!goalInput.trim()) return;
+    setError(null);
+    console.log("Triggering AI Path Build for:", goalInput.trim());
     submit({ goal: goalInput.trim() });
   }
 
@@ -224,12 +226,15 @@ export default function OnboardingPage() {
               </div>
 
               {/* Streaming Skeleton Loaders */}
-              {isLoading && object?.topics && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-                  {object.topics.map((t, i) => (
-                    <div key={i} className="stagger-item skeleton" style={{ height: 56, borderRadius: 10, opacity: 0.7 }} />
+              {isLoading && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24, padding: 20, background: "var(--bg-subtle)", borderRadius: 12, border: "1px dashed var(--accent-muted)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--accent)", marginBottom: 12 }}>
+                    <Loader2 size={18} className="animate-spin" />
+                    <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase" }}>AI is mapping your journey...</span>
+                  </div>
+                  {(object?.topics || [1, 2, 3]).map((_: unknown, i: number) => (
+                    <div key={i} className="stagger-item skeleton" style={{ height: 48, borderRadius: 10, opacity: 0.6 }} />
                   ))}
-                  <div className="skeleton" style={{ height: 56, borderRadius: 10, animationDelay: "200ms", opacity: 0.4 }} />
                 </div>
               )}
 
