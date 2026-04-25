@@ -1,8 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, Clock, Zap, ChevronRight, ChevronLeft, Plus, X, Check, Sparkles } from "lucide-react";
+import { BookOpen, Clock, Zap, ChevronRight, ChevronLeft, Plus, X, Check, Sparkles, Loader2 } from "lucide-react";
 import type { Topic, Intensity, OnboardingState } from "@/types";
+import { experimental_useObject as useObject } from "ai/react";
+import { z } from "zod";
+import { supabase } from "@/lib/supabase";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -29,6 +32,33 @@ export default function OnboardingPage() {
   const [state, setState] = useState<OnboardingState>(initialState);
   const [topicInput, setTopicInput] = useState("");
   const [goalInput, setGoalInput] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const { object, submit, isLoading } = useObject({
+    api: "/api/curriculum",
+    schema: z.object({
+      topics: z.array(
+        z.object({
+          title: z.string(),
+          description: z.string(),
+          estimated_hours: z.number(),
+          week_number: z.number(),
+        })
+      ),
+    }),
+    onFinish: ({ object }) => {
+      if (object?.topics) {
+        const generatedTopics: Topic[] = object.topics.map((t, i) => ({
+          id: `ai-${Date.now()}-${i}`,
+          name: t.title,
+          difficulty: 3,
+          estimated_minutes: t.estimated_hours * 60,
+        }));
+        setState((s) => ({ ...s, topics: [...s.topics, ...generatedTopics] }));
+        setGoalInput("");
+      }
+    }
+  });
 
   const animClass = direction === "forward" ? "stagger-item" : "stagger-item";
 
@@ -48,18 +78,46 @@ export default function OnboardingPage() {
 
   function addFromGoal() {
     if (!goalInput.trim()) return;
-    const goal = goalInput.trim();
-    const suggested: Topic[] = [
-      { id: "ai-1", name: `${goal} — Fundamentals`, difficulty: 2, estimated_minutes: 120 },
-      { id: "ai-2", name: `${goal} — Core Concepts`, difficulty: 3, estimated_minutes: 150 },
-      { id: "ai-3", name: `${goal} — Practice & Projects`, difficulty: 4, estimated_minutes: 180 },
-    ];
-    setState((s) => ({ ...s, topics: suggested }));
-    setGoalInput("");
+    submit({ goal: goalInput.trim() });
   }
 
-  function handleFinish() {
-    localStorage.setItem("daywise_onboarding", JSON.stringify(state));
+  async function handleFinish() {
+    setSaving(true);
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData?.user) {
+      // Fallback if not logged in
+      localStorage.setItem("daywise_onboarding", JSON.stringify(state));
+      router.push("/auth/signup");
+      return;
+    }
+
+    const userId = authData.user.id;
+
+    // 1. Update Profile schedule & pacing
+    await supabase.from("profiles").upsert({
+      id: userId,
+      schedule_json: {
+        daily_hours: state.daily_hours,
+        weekly_varies: state.weekly_varies,
+        per_day_hours: state.per_day_hours,
+      },
+      pacing: state.intensity,
+      sr_enabled: state.sr_enabled,
+    });
+
+    // 2. Insert Curricula (if any)
+    if (state.topics.length > 0) {
+      const inserts = state.topics.map((t, i) => ({
+        user_id: userId,
+        title: t.name,
+        description: "",
+        estimated_hours: t.estimated_minutes / 60,
+        week_number: Math.floor(i / 3) + 1, // rough estimate if none provided
+        sort_order: i,
+      }));
+      await supabase.from("curricula").insert(inserts);
+    }
+
     router.push("/today");
   }
 
@@ -136,12 +194,22 @@ export default function OnboardingPage() {
                 </p>
                 <div style={{ display: "flex", gap: 10 }}>
                   <input value={goalInput} onChange={(e) => setGoalInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addFromGoal()}
-                    placeholder='e.g. "Learn Python for data science"' style={{ ...inputBase, flex: 1 }} />
-                  <button onClick={addFromGoal} style={{ background: "var(--accent)", color: "white", border: "none", borderRadius: 8, padding: "12px 20px", fontWeight: 600, fontSize: 14, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "var(--shadow-sm)", transition: "background 200ms" }}>
-                    Build Path
+                    placeholder='e.g. "Learn Python for data science"' disabled={isLoading} style={{ ...inputBase, flex: 1, opacity: isLoading ? 0.7 : 1 }} />
+                  <button onClick={addFromGoal} disabled={isLoading || !goalInput.trim()} style={{ background: "var(--accent)", color: "white", border: "none", borderRadius: 8, padding: "12px 20px", fontWeight: 600, fontSize: 14, cursor: isLoading ? "not-allowed" : "pointer", whiteSpace: "nowrap", boxShadow: "var(--shadow-sm)", transition: "background 200ms", display: "flex", alignItems: "center", gap: 8 }}>
+                    {isLoading ? <Loader2 size={16} className="animate-spin" /> : "Build Path"}
                   </button>
                 </div>
               </div>
+
+              {/* Streaming Skeleton Loaders */}
+              {isLoading && object?.topics && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+                  {object.topics.map((t, i) => (
+                    <div key={i} className="stagger-item skeleton" style={{ height: 56, borderRadius: 10, opacity: 0.7 }} />
+                  ))}
+                  <div className="skeleton" style={{ height: 56, borderRadius: 10, animationDelay: "200ms", opacity: 0.4 }} />
+                </div>
+              )}
 
               {/* Manual add */}
               <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
@@ -349,10 +417,10 @@ export default function OnboardingPage() {
                   onMouseLeave={(e) => e.currentTarget.style.background = "var(--bg-surface)"}>
                   <ChevronLeft size={18} strokeWidth={2.5} /> Adjust
                 </button>
-                <button onClick={handleFinish} style={{ flex: 2, background: "linear-gradient(135deg, var(--accent), var(--accent-hover))", color: "white", border: "none", borderRadius: 10, padding: "16px", fontWeight: 600, fontSize: 15, cursor: "pointer", boxShadow: "var(--shadow-md)", transition: "transform 200ms" }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
-                  Looks good — Start Learning →
+                <button onClick={handleFinish} disabled={saving} style={{ flex: 2, background: "linear-gradient(135deg, var(--accent), var(--accent-hover))", color: "white", border: "none", borderRadius: 10, padding: "16px", fontWeight: 600, fontSize: 15, cursor: saving ? "not-allowed" : "pointer", boxShadow: "var(--shadow-md)", transition: "transform 200ms", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+                  onMouseEnter={(e) => { if(!saving) (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+                  onMouseLeave={(e) => { if(!saving) (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
+                  {saving ? <><Loader2 size={18} className="animate-spin"/> Saving...</> : <>Looks good — Start Learning →</>}
                 </button>
               </div>
             </div>

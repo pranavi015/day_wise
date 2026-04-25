@@ -1,13 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Map, BarChart2, LogOut, Sparkles } from "lucide-react";
+import { Home, Map, BarChart2, LogOut, Sparkles, Settings } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
   { href: "/today",    label: "Today",    icon: Home },
   { href: "/roadmap",  label: "Roadmap",  icon: Map },
   { href: "/progress", label: "Progress", icon: BarChart2 },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export default function Sidebar() {
