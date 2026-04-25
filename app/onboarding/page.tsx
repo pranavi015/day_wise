@@ -3,8 +3,6 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BookOpen, Clock, Zap, ChevronRight, ChevronLeft, Plus, X, Check, Sparkles, Loader2 } from "lucide-react";
 import type { Topic, Intensity, OnboardingState } from "@/types";
-import { experimental_useObject as useObject } from "@ai-sdk/react";
-import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -37,38 +35,47 @@ export default function OnboardingPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { object, submit, isLoading } = useObject({
-    api: "/api/curriculum",
-    schema: z.object({
-      topics: z.array(
-        z.object({
-          title: z.string(),
-          description: z.string(),
-          estimated_hours: z.number(),
-          week_number: z.number(),
-        })
-      ),
-    }),
-    onFinish: ({ object }) => {
-      if (object?.topics) {
-        const generatedTopics: Topic[] = object.topics.map((t, i) => ({
+  const [loading, setLoading] = useState(false);
+
+  async function addFromGoal() {
+    if (!goalInput.trim()) return;
+    setLoading(true);
+    setError(null);
+    console.log("Triggering AI Path Build for:", goalInput.trim());
+
+    try {
+      const res = await fetch("/api/curriculum", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goal: goalInput.trim() }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to generate path");
+      }
+
+      const data = await res.json();
+      if (data?.topics && Array.isArray(data.topics)) {
+        const generatedTopics: Topic[] = data.topics.map((t: { title: string; description: string; estimated_hours: number; week_number: number }, i: number) => ({
           id: `ai-${Date.now()}-${i}`,
-          name: t.title,
-          description: t.description,
+          name: t.title || "Untitled Topic",
+          description: t.description || "",
           difficulty: 3 as const,
           estimated_minutes: (t.estimated_hours || 2) * 60,
           week_number: t.week_number || (Math.floor(i / 3) + 1),
         }));
         setState((s) => ({ ...s, topics: [...s.topics, ...generatedTopics] }));
         setGoalInput("");
-        setError(null);
       }
-    },
-    onError: (err) => {
-      console.error("AI Generation Error:", err);
-      setError("Failed to generate topics. Please check your API key or try a specific goal.");
+    } catch (err: unknown) {
+      console.error("Path Build Failure:", err);
+      const errMsg = err instanceof Error ? err.message : "An unexpected error occurred building your path.";
+      setError(errMsg);
+    } finally {
+      setLoading(false);
     }
-  });
+  }
 
   const animClass = direction === "forward" ? "stagger-item" : "stagger-item";
 
@@ -86,12 +93,8 @@ export default function OnboardingPage() {
     setState((s) => ({ ...s, topics: s.topics.filter((t) => t.id !== id) }));
   }
 
-  function addFromGoal() {
-    if (!goalInput.trim()) return;
-    setError(null);
-    console.log("Triggering AI Path Build for:", goalInput.trim());
-    submit({ goal: goalInput.trim() });
-  }
+  // Removed addFromGoal duplicate - logic moved above
+
 
   async function handleFinish() {
     setSaving(true);
@@ -213,9 +216,9 @@ export default function OnboardingPage() {
                 </p>
                 <div style={{ display: "flex", gap: 10 }}>
                   <input value={goalInput} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGoalInput(e.target.value)} onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && addFromGoal()}
-                    placeholder='e.g. "Learn Python for data science"' disabled={isLoading} style={{ ...inputBase, flex: 1, opacity: isLoading ? 0.7 : 1 }} />
-                  <button onClick={addFromGoal} disabled={isLoading || !goalInput.trim()} style={{ background: "var(--accent)", color: "white", border: "none", borderRadius: 8, padding: "12px 20px", fontWeight: 600, fontSize: 14, cursor: isLoading ? "not-allowed" : "pointer", whiteSpace: "nowrap", boxShadow: "var(--shadow-sm)", transition: "background 200ms", display: "flex", alignItems: "center", gap: 8 }}>
-                    {isLoading ? <Loader2 size={16} className="animate-spin" /> : "Build Path"}
+                    placeholder='e.g. "Learn Python for data science"' disabled={loading} style={{ ...inputBase, flex: 1, opacity: loading ? 0.7 : 1 }} />
+                  <button onClick={addFromGoal} disabled={loading || !goalInput.trim()} style={{ background: "var(--accent)", color: "white", border: "none", borderRadius: 8, padding: "12px 20px", fontWeight: 600, fontSize: 14, cursor: loading ? "not-allowed" : "pointer", whiteSpace: "nowrap", boxShadow: "var(--shadow-sm)", transition: "background 200ms", display: "flex", alignItems: "center", gap: 8 }}>
+                    {loading ? <Loader2 size={16} className="animate-spin" /> : "Build Path"}
                   </button>
                 </div>
                 {error && (
@@ -226,13 +229,13 @@ export default function OnboardingPage() {
               </div>
 
               {/* Streaming Skeleton Loaders */}
-              {isLoading && (
+              {loading && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24, padding: 20, background: "var(--bg-subtle)", borderRadius: 12, border: "1px dashed var(--accent-muted)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--accent)", marginBottom: 12 }}>
                     <Loader2 size={18} className="animate-spin" />
                     <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase" }}>AI is mapping your journey...</span>
                   </div>
-                  {(object?.topics || [1, 2, 3]).map((_: unknown, i: number) => (
+                  {[1, 2, 3].map((_, i) => (
                     <div key={i} className="stagger-item skeleton" style={{ height: 48, borderRadius: 10, opacity: 0.6 }} />
                   ))}
                 </div>

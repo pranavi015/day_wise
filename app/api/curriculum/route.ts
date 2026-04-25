@@ -1,5 +1,5 @@
 import { createGroq } from "@ai-sdk/groq";
-import { streamObject } from "ai";
+import { generateObject } from "ai";
 import { z } from "zod";
 
 const groq = createGroq({
@@ -17,23 +17,26 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: "Goal is required" }), { status: 400 });
     }
 
-    const result = await streamObject({
+    const { object } = await generateObject({
       model: groq("llama-3.1-70b-versatile"),
-      system: "You are an expert curriculum designer. Break down the user's learning goal into an array of 5-10 topics. Return an array of topic objects.",
+      system: "You are an expert curriculum designer. Break down the user's goal into exactly 6 distinct, logical topics for a roadmap. Return a JSON object with a 'topics' array. Each topic MUST have 'title', 'description', 'estimated_hours', and 'week_number'.",
       prompt: `Generate a full curriculum for this goal: ${goal}`,
       schema: z.object({
         topics: z.array(
           z.object({
-            title: z.string().describe("The name of the topic"),
-            description: z.string().describe("Short 1-sentence description"),
-            estimated_hours: z.number().describe("Estimated hours, e.g. 2, 4"),
-            week_number: z.number().describe("Week number started from 1"),
+            title: z.string(),
+            description: z.string(),
+            estimated_hours: z.number(),
+            week_number: z.number(),
           })
         ),
       }),
     });
 
-    return result.toTextStreamResponse();
+    console.log("AI Generated successfully:", object.topics.length, "topics");
+    return new Response(JSON.stringify(object), {
+      headers: { "Content-Type": "application/json" }
+    });
   } catch (error: unknown) {
     const errorMsg = error instanceof Error ? error.message : "Failed to generate curriculum";
     console.error("Critical AI API Route Error:", error);
