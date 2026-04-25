@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import Sidebar from "@/components/Sidebar";
 import { supabase } from "@/lib/supabase";
 import { Loader2, Upload, User, Check } from "lucide-react";
@@ -44,7 +45,7 @@ export default function SettingsPage() {
         if (data.schedule_json) setSchedule(data.schedule_json);
         if (data.pacing) setPacing(data.pacing as Intensity);
       } else {
-         setProfile({ ...profile, id: userId });
+         setProfile((p) => ({ ...p, id: userId }));
       }
       setLoading(false);
     }
@@ -122,7 +123,7 @@ export default function SettingsPage() {
             <div style={{ display: "flex", gap: 24, alignItems: "center", marginBottom: 24 }}>
               <div style={{ width: 80, height: 80, borderRadius: "50%", background: "var(--bg-muted)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <Image src={profile.avatar_url} alt="Avatar" width={80} height={80} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 ) : (
                   <User size={32} color="var(--text-tertiary)" />
                 )}

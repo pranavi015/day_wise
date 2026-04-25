@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BookOpen, Clock, Zap, ChevronRight, ChevronLeft, Plus, X, Check, Sparkles, Loader2 } from "lucide-react";
 import type { Topic, Intensity, OnboardingState } from "@/types";
@@ -204,7 +204,7 @@ export default function OnboardingPage() {
               {/* Streaming Skeleton Loaders */}
               {isLoading && object?.topics && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-                  {object.topics.map((_: any, i: number) => (
+                  {object.topics.map((t, i) => (
                     <div key={i} className="stagger-item skeleton" style={{ height: 56, borderRadius: 10, opacity: 0.7 }} />
                   ))}
                   <div className="skeleton" style={{ height: 56, borderRadius: 10, animationDelay: "200ms", opacity: 0.4 }} />
@@ -225,7 +225,7 @@ export default function OnboardingPage() {
               {/* Topic list */}
               {state.topics.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 32 }}>
-                  {state.topics.map((t: any, i: number) => (
+                  {state.topics.map((t: Topic, i: number) => (
                     <div key={t.id} className="stagger-item" style={{ animationDelay: `${i * 50}ms`, background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: 10, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                         <span style={{ width: 26, height: 26, borderRadius: 8, background: "var(--accent-subtle)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>{i + 1}</span>
@@ -389,7 +389,7 @@ export default function OnboardingPage() {
                 {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, i: number) => (
                   <div key={day} className="stagger-item" style={{ animationDelay: `${i * 60}ms`, background: "var(--bg-surface)", border: `1px solid ${i === 0 ? "var(--accent-muted)" : "var(--border-subtle)"}`, borderRadius: 10, padding: "12px 6px", textAlign: "center", boxShadow: i === 0 ? "0 4px 12px rgba(99,102,241,0.15)" : "var(--shadow-sm)", transform: i === 0 ? "translateY(-4px)" : "none", transition: "transform 300ms ease" }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: i === 0 ? "var(--accent)" : "var(--text-tertiary)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>{day}</div>
-                    {state.topics.slice(0, 2).map((t: any, ti: number) => (
+                    {state.topics.slice(0, 2).map((t: Topic, ti: number) => (
                       <div key={ti} style={{ fontSize: 10, background: "var(--bg-subtle)", border: "1px solid var(--border-subtle)", borderRadius: 4, padding: "4px", marginBottom: 6, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }}>
                         {t.name.split(" ")[0]}
                       </div>

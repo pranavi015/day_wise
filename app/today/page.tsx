@@ -29,7 +29,7 @@ export default function TodayPage() {
         supabase.from("profiles").select("*").eq("id", userId).single(),
         supabase.from("curricula").select("*").eq("user_id", userId).order("sort_order", { ascending: true }),
         supabase.from("task_completions").select("*").eq("user_id", userId)
-      ]) as any[];
+      ]);
 
       const profile = results[0].data;
       const curricula = results[1].data;
@@ -39,7 +39,7 @@ export default function TodayPage() {
       let currentStreak = 0;
       if (completions && Array.isArray(completions) && completions.length > 0) {
         const uniqueDates = Array.from(new Set(completions.map((c: { completed_date: string }) => c.completed_date))).sort((a,b) => b.localeCompare(a));
-        let checkDate = new Date();
+        const checkDate = new Date();
         // If today is not in there, check if yesterday is. If neither, streak is 0.
         const todayIso = checkDate.toISOString().split("T")[0];
         checkDate.setDate(checkDate.getDate() - 1);
@@ -49,7 +49,7 @@ export default function TodayPage() {
           currentStreak = 0;
         } else {
           // Count backwards
-          let streakIterDate = new Date();
+          const streakIterDate = new Date();
           if (!uniqueDates.includes(todayIso)) {
              streakIterDate.setDate(streakIterDate.getDate() - 1);
           }
@@ -77,8 +77,8 @@ export default function TodayPage() {
         let currentTopicIdx = 0;
         let remainingTopicMins = curricula[currentTopicIdx].estimated_hours * 60;
         
-        let iterDate = new Date(startDate);
-        let generatedTasks: Task[] = [];
+        const iterDate = new Date(startDate);
+        const generatedTasks: Task[] = [];
 
         while (iterDate <= targetDate && currentTopicIdx < curricula.length) {
           const dayOfWeek = iterDate.toLocaleDateString("en-US", { weekday: "short" });
@@ -91,7 +91,7 @@ export default function TodayPage() {
             if (iterDate.getTime() === targetDate.getTime()) {
               const topic = curricula[currentTopicIdx];
               const taskId = `${topic.id}_${todayStr}_${generatedTasks.length}`;
-              const isComplete = (completions as any[])?.some((c: any) => c.task_id === taskId) || false;
+              const isComplete = (completions as { task_id: string }[] | null)?.some((c) => c.task_id === taskId) || false;
               
               generatedTasks.push({
                 id: taskId,

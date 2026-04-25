@@ -30,7 +30,7 @@ export default function ProgressPage() {
         supabase.from("task_completions").select("*").eq("user_id", userId),
         supabase.from("focus_sessions").select("*").eq("user_id", userId).gte("completed_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
         supabase.from("curricula").select("*").eq("user_id", userId)
-      ]) as any[];
+      ]);
 
       const profile = results[0].data;
       const completions = results[1].data;
@@ -43,13 +43,13 @@ export default function ProgressPage() {
       let currentStreak = 0;
       if (completions && Array.isArray(completions) && completions.length > 0) {
         const uniqueDates = Array.from(new Set(completions.map((c: { completed_date: string }) => c.completed_date))).sort((a,b) => b.localeCompare(a));
-        let checkDate = new Date();
+        const checkDate = new Date();
         const todayIso = checkDate.toISOString().split("T")[0];
         checkDate.setDate(checkDate.getDate() - 1);
         const yesterdayIso = checkDate.toISOString().split("T")[0];
 
         if (uniqueDates.includes(todayIso) || uniqueDates.includes(yesterdayIso)) {
-          let streakIterDate = new Date();
+          const streakIterDate = new Date();
           if (!uniqueDates.includes(todayIso)) streakIterDate.setDate(streakIterDate.getDate() - 1);
           while(true) {
             const iterIso = streakIterDate.toISOString().split("T")[0];
@@ -174,7 +174,7 @@ export default function ProgressPage() {
 
           {/* Stat cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 32 }} className="stat-grid">
-            {statCards.map(({ label, value, trend, icon: Icon, color }, i) => (
+            {statCards.map(({ label, value, icon: Icon, color }, i) => (
               <div key={label} className="stagger-item" style={{ 
                 animationDelay: `${i * 60}ms`, background: "var(--bg-surface)", 
                 border: "1px solid var(--border-subtle)", borderRadius: 16, padding: "20px",

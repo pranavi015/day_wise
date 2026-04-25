@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import { supabase } from "@/lib/supabase";
-import { CheckCircle2, Clock, Map as MapIcon, Loader2, GripVertical, Plus, X, ListPlus } from "lucide-react";
+import { CheckCircle2, Clock, Loader2, GripVertical, X, ListPlus } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -282,7 +282,7 @@ export default function RoadmapPage() {
 
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={(e: DragStartEvent) => setActiveId(e.active.id.toString())} onDragEnd={handleDragEnd}>
             <SortableContext items={curricula.map((c: DBTopic) => c.id)} strategy={verticalListSortingStrategy}>
-              {weekNodes.map((weekNode: { week: number; topics: DBTopic[] }, wi: number) => {
+              {weekNodes.map((weekNode: { week: number; topics: DBTopic[] }) => {
                 const weekHours = Math.round(weekNode.topics.reduce((s: number, t: DBTopic) => s + t.estimated_hours, 0) * 10) / 10;
 
                 // Active highlighting concept based on dates (hard to do without a start date, so we assume Week 1 is current for prototype)

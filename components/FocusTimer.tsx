@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Play, Pause, RotateCcw, Timer, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -9,6 +9,17 @@ export default function FocusTimer({ activeTopicId }: { activeTopicId?: string }
   const [running, setRunning] = useState(false);
   const [hoverBtn, setHoverBtn] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const saveFocusSession = useCallback(async () => {
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData?.user) return;
+    
+    await supabase.from("focus_sessions").insert({
+      user_id: authData.user.id,
+      topic_id: activeTopicId || null,
+      duration_minutes: 25
+    });
+  }, [activeTopicId]);
 
   useEffect(() => {
     if (running) {
@@ -27,18 +38,7 @@ export default function FocusTimer({ activeTopicId }: { activeTopicId?: string }
       if (intervalRef.current) clearInterval(intervalRef.current);
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [running]);
-
-  async function saveFocusSession() {
-    const { data: authData } = await supabase.auth.getUser();
-    if (!authData?.user) return;
-    
-    await supabase.from("focus_sessions").insert({
-      user_id: authData.user.id,
-      topic_id: activeTopicId || null,
-      duration_minutes: 25
-    });
-  }
+  }, [running, saveFocusSession]);
 
   const mins = String(Math.floor(seconds / 60)).padStart(2, "0");
   const secs = String(seconds % 60).padStart(2, "0");
