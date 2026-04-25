@@ -127,6 +127,7 @@ export default function RoadmapPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [activeModalWeek, setActiveModalWeek] = useState(1);
   const [toast, setToast] = useState<{ show: boolean; msg: string; type: "success" | "error" } | null>(null);
+  const [dbError, setDbError] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -139,13 +140,23 @@ export default function RoadmapPage() {
 
   async function fetchData() {
     setLoading(true);
-    const { data: authData } = await supabase.auth.getUser();
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    
     if (authData?.user) {
-      const { data } = await supabase.from("curricula")
+      const { data, error } = await supabase.from("curricula")
         .select("*")
         .eq("user_id", authData.user.id)
         .order("sort_order", { ascending: true });
-      if (data) setCurricula(data as DBTopic[]);
+        
+      if (error) {
+        console.error("Database schema error:", error.message);
+        setDbError(error.message);
+      } else if (data) {
+        setDbError(null);
+        setCurricula(data as DBTopic[]);
+      }
+    } else if (authError) {
+      console.warn("Auth fetching failed", authError);
     }
     setLoading(false);
   }
@@ -202,13 +213,14 @@ export default function RoadmapPage() {
         const { error } = await supabase.from("curricula").upsert(itemsToUpsert);
         if (error) {
           console.error("Failed to save roadmap:", error);
-          setToast({ show: true, msg: "Failed to save roadmap.", type: "error" });
+          setDbError(error.message);
+          setToast({ show: true, msg: "Database Error: Could not save.", type: "error" });
         } else {
+          setDbError(null);
           setToast({ show: true, msg: "Roadmap saved successfully!", type: "success" });
         }
         setTimeout(() => setToast(null), 3000);
       } else {
-         // Empty curricula also requires save confirmation just to be clear
          setToast({ show: true, msg: "Roadmap saved successfully!", type: "success" });
          setTimeout(() => setToast(null), 3000);
       }
@@ -273,21 +285,75 @@ export default function RoadmapPage() {
       <Sidebar />
       <AddTopicModal isOpen={modalOpen} defaultWeek={activeModalWeek} onClose={() => setModalOpen(false)} onAdd={handleAddTopic} />
 
-      <main style={{ flex: 1, paddingBottom: 40, marginLeft: 224 }} className="roadmap-main">
-        <div style={{ maxWidth: 720, margin: "0 auto", padding: "40px 32px" }}>
+      {dbError && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(15, 23, 42, 0.8)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "var(--bg-surface)", border: "1px solid var(--error)", padding: 40, borderRadius: 24, maxWidth: 500, textAlign: "center", boxShadow: "0 24px 48px rgba(0,0,0,0.3)", animation: "fadeInUp 0.4s ease-out" }}>
+            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--error-subtle)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
+              <X size={32} color="var(--error)" strokeWidth={3} />
+            </div>
+            <h2 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 12px", color: "var(--text-primary)" }}>Database Mismatch Detected</h2>
+            <p style={{ fontSize: 15, color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: 24 }}>
+              Your Supabase dashboard is missing the latest schema configurations. The application cannot save or load data correctly until the columns exist.
+            </p>
+            <div style={{ background: "var(--bg-muted)", padding: 16, borderRadius: 12, textAlign: "left", fontSize: 13, color: "var(--error)", fontFamily: "monospace", overflowX: "auto", marginBottom: 32, border: "1px dashed var(--error-muted)" }}>
+              {dbError}
+            </div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>👉 Fix Action Required:</p>
+            <p style={{ fontSize: 13, color: "var(--text-tertiary)" }}>Please execute the <code>supabase_schema.sql</code> artifact contents in your Supabase SQL Editor and then refresh the page.</p>
+          </div>
+        </div>
+      )}
+
+      <main style={{ flex: 1, paddingBottom: 60, marginLeft: 224 }} className="roadmap-main">
+        {/* Ambient Gradient Header Background for absolute premium feel */}
+        <div style={{ position: "absolute", top: 0, left: 224, right: 0, height: 300, background: "radial-gradient(ellipse at top right, rgba(99,102,241,0.08), transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
+
+        <div style={{ maxWidth: 840, margin: "0 auto", padding: "60px 40px", position: "relative", zIndex: 1 }}>
 
           {/* Header */}
-          <div style={{ marginBottom: 32, display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+          <div style={{ marginBottom: 40, display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
             <div>
-              <h1 style={{ margin: "0 0 8px", fontSize: 32, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.8px" }}>Your Roadmap</h1>
-              <p style={{ margin: 0, fontSize: 14.5, color: "var(--text-secondary)" }}>
-                {curricula.length} topics total across {maxWeek} weeks
+              <h1 style={{ margin: "0 0 10px", fontSize: 36, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-1px" }}>Your Roadmap</h1>
+              <p style={{ margin: 0, fontSize: 15, color: "var(--text-secondary)", fontWeight: 500 }}>
+                {curricula.length > 0 ? `${curricula.length} topics strategically distributed across ${maxWeek} weeks.` : "Design your learning journey from scratch."}
               </p>
             </div>
-            <button onClick={toggleEditMode} disabled={saving} style={{ background: editing ? "var(--success)" : "var(--bg-surface)", color: editing ? "white" : "var(--text-primary)", border: `1px solid ${editing ? "var(--success)" : "var(--border-strong)"}`, borderRadius: 8, padding: "8px 16px", fontWeight: 600, fontSize: 13, cursor: saving ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 8, boxShadow: "var(--shadow-sm)" }}>
-              {saving ? <Loader2 size={14} className="animate-spin" /> : editing ? "Save Changes" : "Edit Roadmap"}
-            </button>
+            {curricula.length > 0 && (
+              <button 
+                onClick={toggleEditMode} 
+                disabled={saving} 
+                style={{ 
+                  background: editing ? "var(--success)" : "linear-gradient(135deg, var(--bg-surface), var(--bg-subtle))", 
+                  color: editing ? "white" : "var(--text-primary)", 
+                  border: `1px solid ${editing ? "var(--success)" : "var(--border-strong)"}`, 
+                  borderRadius: 10, padding: "12px 20px", fontWeight: 600, fontSize: 14, 
+                  cursor: saving ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 10, 
+                  boxShadow: "var(--shadow-md)", transition: "all 0.2s ease" 
+                }}
+              >
+                {saving ? <Loader2 size={16} className="animate-spin" /> : editing ? "Save Changes" : "Edit Roadmap"}
+              </button>
+            )}
           </div>
+
+          {/* Zero State Hero */}
+          {curricula.length === 0 && !editing && (
+            <div style={{ background: "linear-gradient(145deg, var(--bg-surface), var(--bg-subtle))", border: "1px dashed var(--border-strong)", borderRadius: 24, padding: "80px 40px", textAlign: "center", boxShadow: "var(--shadow-lg)", position: "relative", overflow: "hidden" }}>
+               <div style={{ position: "absolute", top: -50, left: -50, width: 200, height: 200, background: "var(--accent)", opacity: 0.05, borderRadius: "50%", filter: "blur(40px)" }} />
+               <div style={{ position: "absolute", bottom: -50, right: -50, width: 150, height: 150, background: "var(--focus)", opacity: 0.05, borderRadius: "50%", filter: "blur(30px)" }} />
+               
+               <div style={{ width: 80, height: 80, borderRadius: "50%", background: "var(--accent-subtle)", border: "4px solid var(--bg-surface)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px", boxShadow: "0 8px 24px rgba(99,102,241,0.2)" }}>
+                 <ListPlus size={36} color="var(--accent)" />
+               </div>
+               <h2 style={{ fontSize: 26, fontWeight: 700, margin: "0 0 12px", color: "var(--text-primary)", letterSpacing: "-0.5px" }}>Blank Canvas</h2>
+               <p style={{ fontSize: 16, color: "var(--text-secondary)", margin: "0 auto 32px", maxWidth: 450, lineHeight: 1.6 }}>
+                 You don&apos;t have any topics scheduled yet. Start mapping out what you want to learn, and we&apos;ll automatically generate your daily tasks.
+               </p>
+               <button onClick={toggleEditMode} style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-hover))", color: "white", border: "none", borderRadius: 12, padding: "16px 32px", fontSize: 15, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 10, boxShadow: "0 10px 20px rgba(99,102,241,0.25)", transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1)" }}>
+                 <ListPlus size={18} /> Schedule First Topic
+               </button>
+            </div>
+          )}
 
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={(e: DragStartEvent) => setActiveId(e.active.id.toString())} onDragEnd={handleDragEnd}>
             <SortableContext items={curricula.map((c: DBTopic) => c.id)} strategy={verticalListSortingStrategy}>
@@ -295,40 +361,41 @@ export default function RoadmapPage() {
                 const weekHours = Math.round(weekNode.topics.reduce((s: number, t: DBTopic) => s + t.estimated_hours, 0) * 10) / 10;
 
                 // Active highlighting concept based on dates (hard to do without a start date, so we assume Week 1 is current for prototype)
-                const isCurrentWeek = weekNode.week === 1 && !editing;
+                const isCurrentWeek = weekNode.week === 1 && !editing && curricula.length > 0;
 
                 if (weekNode.topics.length === 0 && !editing) return null;
 
                 return (
-                  <div key={weekNode.week} style={{ marginBottom: 16 }}>
-                    <div style={{ background: "var(--bg-surface)", border: `1px solid var(--border-subtle)`, borderRadius: 16, overflow: "hidden", boxShadow: "var(--shadow-sm)", position: "relative" }}>
-                      {isCurrentWeek && <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 4, background: "var(--accent)" }} />}
+                  <div key={weekNode.week} style={{ marginBottom: 24 }}>
+                    <div style={{ background: "var(--bg-surface)", border: `1px solid ${isCurrentWeek ? "var(--accent-muted)" : "var(--border-subtle)"}`, borderRadius: 20, overflow: "hidden", boxShadow: isCurrentWeek ? "0 12px 32px rgba(99,102,241,0.08)" : "var(--shadow-sm)", position: "relative", transition: "all 0.3s ease" }}>
+                      {isCurrentWeek && <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 4, background: "var(--accent)", zIndex: 2 }} />}
 
                       {/* Week header */}
-                      <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border-subtle)", background: isCurrentWeek ? "var(--bg-surface)" : "var(--bg-subtle)" }}>
-                        <div style={{ display: "flex", alignItems: "center" }}>
-                          <span style={{ fontWeight: 700, fontSize: 16, color: "var(--text-primary)", paddingLeft: isCurrentWeek ? 12 : 0 }}>Week {weekNode.week}</span>
+                      <div style={{ padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border-subtle)", background: isCurrentWeek ? "linear-gradient(90deg, var(--accent-subtle) 0%, transparent 50%)" : "var(--bg-subtle)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <span style={{ fontWeight: 700, fontSize: 17, color: "var(--text-primary)", paddingLeft: isCurrentWeek ? 8 : 0 }}>Week {weekNode.week}</span>
+                          {isCurrentWeek && <span style={{ background: "var(--accent)", color: "white", padding: "4px 10px", borderRadius: 12, fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase" }}>Current</span>}
                         </div>
-                        <span style={{ fontSize: 13, color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6, fontWeight: 500 }}>
-                          <Clock size={14} /> {weekHours}h
+                        <span style={{ fontSize: 13, color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 8, fontWeight: 600, background: "var(--bg-surface)", padding: "6px 12px", borderRadius: 8, border: "1px solid var(--border-subtle)" }}>
+                          <Clock size={14} color="var(--accent)" /> {weekHours}h
                         </span>
                       </div>
 
                       {/* Topics */}
-                      <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 12 }}>
                         {weekNode.topics.map((topic: DBTopic) => (
                           <SortableTopicItem key={topic.id} topic={topic} editing={editing} onDelete={handleDelete} onDefer={handleDefer} />
                         ))}
 
                         {weekNode.topics.length === 0 && (
-                          <div style={{ textAlign: "center", padding: "12px", border: "1px dashed var(--border-default)", borderRadius: 8, color: "var(--text-tertiary)", fontSize: 13 }}>
-                            No topics in this week.
+                          <div style={{ textAlign: "center", padding: "24px", border: "1px dashed var(--border-default)", borderRadius: 12, color: "var(--text-tertiary)", fontSize: 14 }}>
+                            No topics grouped in this week.
                           </div>
                         )}
 
                         {editing && (
-                          <button onClick={() => { setActiveModalWeek(weekNode.week); setModalOpen(true); }} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px", background: "transparent", border: "1px dashed var(--border-strong)", borderRadius: 10, color: "var(--text-secondary)", fontWeight: 500, fontSize: 13, cursor: "pointer", marginTop: 8 }}>
-                            <ListPlus size={16} /> Add Topic to Week {weekNode.week}
+                          <button onClick={() => { setActiveModalWeek(weekNode.week); setModalOpen(true); }} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "14px", background: "var(--bg-subtle)", border: "1px dashed var(--border-strong)", borderRadius: 12, color: "var(--text-primary)", fontWeight: 600, fontSize: 14, cursor: "pointer", marginTop: 8, transition: "background 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "var(--bg-surface)"} onMouseOut={e => e.currentTarget.style.background = "var(--bg-subtle)"}>
+                            <ListPlus size={18} color="var(--accent)" /> Add Topic to Week {weekNode.week}
                           </button>
                         )}
                       </div>

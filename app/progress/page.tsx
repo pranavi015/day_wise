@@ -17,7 +17,7 @@ export default function ProgressPage() {
   const [heatmapData, setHeatmapData] = useState<Record<string, number>>({});
   const [coachSummary, setCoachSummary] = useState<string | null>(null);
   const [coachLoading, setCoachLoading] = useState(false);
-  const [burnoutScore, setBurnoutScore] = useState(0);
+  const [burnoutScore, setBurnoutScore] = useState<number | null>(null);
   const [moodData, setMoodData] = useState<{ date: string; mood: number; completion: number }[]>([]);
 
   useEffect(() => {
@@ -128,28 +128,30 @@ export default function ProgressPage() {
       setHeatmapData(heatmap);
 
       // 4. Set final stats
-      const totalPlanned = last7Days.reduce((a,b)=>a+b.minutes_planned,0) || 1;
+      const totalPlanned = last7Days.reduce((a,b)=>a+b.minutes_planned,0);
       const totalSpent = last7Days.reduce((a,b)=>a+b.minutes_spent,0);
-      const adherence = Math.min(Math.round((totalSpent / totalPlanned) * 100), 100);
+      const adherence = totalPlanned > 0 ? Math.min(Math.round((totalSpent / totalPlanned) * 100), 100) : 0;
 
-      // Simple mock for "completion rate" vs "adherence"
       setStats({
-        completionRate: completions ? Math.min(Math.round((completions.length / (totalPlanned / 60)) * 100), 100) : 0,
+        completionRate: completions && totalPlanned > 0 ? Math.min(Math.round((completions.length / (totalPlanned / 60)) * 100), 100) : 0,
         streak: currentStreak,
-        topicsMastered: 0, // Requires complex check if cumulative minutes > estimated_hours
+        topicsMastered: 0,
         adherenceRate: adherence
       });
 
       // Burnout Risk Score (P13)
-      // Components: 7-day completion rate, adherence, consecutive-miss detection
-      const missedDays = last7Days.filter(d => d.minutes_spent === 0 && d.minutes_planned > 0).length;
-      const overStudying = adherence > 130 ? 20 : 0;
-      const rawBurnout = Math.min(100, Math.round((
-        (1 - Math.min(adherence / 100, 1)) * 40 +
-        (missedDays / 7) * 40 +
-        overStudying
-      )));
-      setBurnoutScore(rawBurnout);
+      if (totalPlanned > 0) {
+        const missedDays = last7Days.filter(d => d.minutes_spent === 0 && d.minutes_planned > 0).length;
+        const overStudying = adherence > 130 ? 20 : 0;
+        const rawBurnout = Math.min(100, Math.round((
+          (1 - Math.min(adherence / 100, 1)) * 40 +
+          (missedDays / 7) * 40 +
+          overStudying
+        )));
+        setBurnoutScore(rawBurnout);
+      } else {
+        setBurnoutScore(null); // Explicit Empty State
+      }
 
       // Mood vs Completion (P14)
       if (moodLogs && moodLogs.length > 0) {
@@ -396,33 +398,53 @@ export default function ProgressPage() {
           </div>
 
           {/* P13 — Burnout Risk Gauge */}
-          <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: 20, padding: 28, marginTop: 32, boxShadow: "var(--shadow-sm)", display: "flex", alignItems: "center", gap: 32 }}>
-            <div style={{ position: "relative", width: 120, height: 72, flexShrink: 0 }}>
-              {(() => {
-                const r = 50;
-                const arcLen = Math.PI * r;
-                const filled = (burnoutScore / 100) * arcLen;
-                const color = burnoutScore < 35 ? "#10B981" : burnoutScore < 65 ? "#F59E0B" : "#EF4444";
-                return (
-                  <svg viewBox="0 0 120 70" width="120" height="70">
-                    <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="var(--bg-muted)" strokeWidth="10" strokeLinecap="round" />
-                    <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke={color} strokeWidth="10" strokeLinecap="round"
-                      strokeDasharray={`${filled} ${arcLen}`} style={{ transition: "stroke-dasharray 800ms cubic-bezier(0.16,1,0.3,1)" }} />
-                    <text x="60" y="56" textAnchor="middle" fontSize="16" fontWeight="800" fill={color}>{burnoutScore}</text>
-                    <text x="60" y="68" textAnchor="middle" fontSize="8" fill="var(--text-tertiary)">/100</text>
+          <div style={{ background: "linear-gradient(135deg, var(--bg-surface), var(--bg-subtle))", border: "1px solid var(--border-subtle)", borderRadius: 24, padding: "32px", marginTop: 32, boxShadow: "var(--shadow-md)", display: "flex", alignItems: "center", gap: 40 }}>
+            {burnoutScore !== null ? (
+              <>
+                <div style={{ position: "relative", width: 140, height: 80, flexShrink: 0 }}>
+                  {(() => {
+                    const r = 60;
+                    const arcLen = Math.PI * r;
+                    const filled = (burnoutScore / 100) * arcLen;
+                    const color = burnoutScore < 35 ? "#10B981" : burnoutScore < 65 ? "#F59E0B" : "#EF4444";
+                    return (
+                      <svg viewBox="0 0 140 80" width="140" height="80">
+                        <path d="M 10 70 A 60 60 0 0 1 130 70" fill="none" stroke="var(--bg-muted)" strokeWidth="12" strokeLinecap="round" />
+                        <path d="M 10 70 A 60 60 0 0 1 130 70" fill="none" stroke={color} strokeWidth="12" strokeLinecap="round"
+                          strokeDasharray={`${filled} ${arcLen}`} style={{ transition: "stroke-dasharray 800ms cubic-bezier(0.16,1,0.3,1)" }} />
+                        <text x="70" y="60" textAnchor="middle" fontSize="26" fontWeight="800" fill={color}>{burnoutScore}</text>
+                        <text x="70" y="76" textAnchor="middle" fontSize="10" fontWeight="700" fill="var(--text-tertiary)">/ 100</text>
+                      </svg>
+                    );
+                  })()}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 800, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "1px" }}>Wellbeing Score</p>
+                  <p style={{ margin: "0 0 12px", fontSize: 24, fontWeight: 800, color: burnoutScore < 35 ? "var(--success)" : burnoutScore < 65 ? "var(--warning)" : "var(--error)", letterSpacing: "-0.5px" }}>
+                    {burnoutScore < 35 ? "On Track & Healthy" : burnoutScore < 65 ? "Moderate Risk" : "High Burnout Risk"}
+                  </p>
+                  <p style={{ margin: 0, fontSize: 15, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                    {burnoutScore < 35 ? "You're consistently hitting goals without overworking. Perfect pacing!" : burnoutScore < 65 ? "You've missed a few sessions recently. Try adjusting your daily goals for better consistency." : "High burnout risk detected. You form habits best when rested. Take a proper day off."}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div style={{ display: "flex", gap: 40, alignItems: "center", opacity: 0.8 }}>
+                <div style={{ position: "relative", width: 140, height: 80, flexShrink: 0 }}>
+                  <svg viewBox="0 0 140 80" width="140" height="80">
+                    <path d="M 10 70 A 60 60 0 0 1 130 70" fill="none" stroke="var(--bg-muted)" strokeWidth="12" strokeLinecap="round" />
+                    <text x="70" y="64" textAnchor="middle" fontSize="24" fontWeight="800" fill="var(--text-tertiary)">N / A</text>
                   </svg>
-                );
-              })()}
-            </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 700, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Wellbeing Score</p>
-              <p style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 700, color: burnoutScore < 35 ? "var(--success)" : burnoutScore < 65 ? "var(--warning)" : "var(--error)", letterSpacing: "-0.3px" }}>
-                {burnoutScore < 35 ? "On Track" : burnoutScore < 65 ? "Moderate Risk" : "High Risk"}
-              </p>
-              <p style={{ margin: 0, fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.5 }}>
-                {burnoutScore < 35 ? "You're on track — good pacing this week. Keep it up!" : burnoutScore < 65 ? "You've missed a few sessions. Try to be more consistent next week." : "High burnout risk detected. Consider a rest day or reducing your daily goal."}
-              </p>
-            </div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 800, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "1px" }}>Wellbeing Score</p>
+                  <p style={{ margin: "0 0 12px", fontSize: 24, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.5px" }}>Awaiting Data</p>
+                  <p style={{ margin: 0, fontSize: 15, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                    Fill out your Roadmap and begin logging focus sessions to activate your personalized wellness analysis algorithms.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* P14 — Mood vs Completion Chart */}

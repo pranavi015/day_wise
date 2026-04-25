@@ -18,6 +18,7 @@ export default function TodayPage() {
   const [missedYesterday, setMissedYesterday] = useState(false);
   const [examDate, setExamDate] = useState<string | null>(null);
   const [rescheduling, setRescheduling] = useState(false);
+  const [dbError, setDbError] = useState<string | null>(null);
 
   const todayStr = new Date().toISOString().split("T")[0];
   const todayDisplay = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
@@ -31,18 +32,29 @@ export default function TodayPage() {
       }
       const userId = authData.user.id;
 
-      // Parallel fetch
-      const results = await Promise.all([
+      // Parallel fetch using Promise.allSettled to catch schema 406s
+      const promises = await Promise.allSettled([
         supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
         supabase.from("curricula").select("*").eq("user_id", userId).order("sort_order", { ascending: true }),
         supabase.from("task_completions").select("*").eq("user_id", userId),
         supabase.from("sr_cards").select("id, topic_id, next_review_date, curricula(title)").eq("user_id", userId).lte("next_review_date", todayStr)
       ]);
 
-      const profile = results[0].data;
-      const curricula = results[1].data;
-      const completions = results[2].data;
-      const srCards = results[3].data as { id: string; topic_id: string; next_review_date: string; curricula: { title: string } | null }[] | null;
+      for (const p of promises) {
+        if (p.status === "fulfilled" && p.value.error) {
+          console.error("Database schema error detected in TodayPage:", p.value.error);
+          setDbError(p.value.error.message);
+          setLoading(false);
+          return;
+        }
+      }
+
+      setDbError(null);
+
+      const profile = promises[0].status === "fulfilled" ? promises[0].value.data : null;
+      const curricula = promises[1].status === "fulfilled" ? promises[1].value.data : null;
+      const completions = promises[2].status === "fulfilled" ? promises[2].value.data : null;
+      const srCards = promises[3].status === "fulfilled" ? promises[3].value.data as { id: string; topic_id: string; next_review_date: string; curricula: { title: string } | null }[] | null : null;
 
       // P15: Exam deadline countdown
       if (profile?.exam_date) setExamDate(profile.exam_date as string);
@@ -252,6 +264,26 @@ export default function TodayPage() {
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg-base)" }}>
       <Sidebar />
+      
+      {/* Diagnostic Database Guard */}
+      {dbError && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(15, 23, 42, 0.8)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "var(--bg-surface)", border: "1px solid var(--error)", padding: 40, borderRadius: 24, maxWidth: 500, textAlign: "center", boxShadow: "0 24px 48px rgba(0,0,0,0.3)", animation: "fadeInUp 0.4s ease-out" }}>
+            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--error-subtle)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
+              <span style={{ fontSize: 32 }}>⚠️</span>
+            </div>
+            <h2 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 12px", color: "var(--text-primary)" }}>Database Sync Failed</h2>
+            <p style={{ fontSize: 15, color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: 24 }}>
+              The application is attempting to read required tables that do not exist or are misconfigured in your database.
+            </p>
+            <div style={{ background: "var(--bg-muted)", padding: 16, borderRadius: 12, textAlign: "left", fontSize: 13, color: "var(--error)", fontFamily: "monospace", overflowX: "auto", marginBottom: 32, border: "1px dashed var(--error-muted)" }}>
+              {dbError}
+            </div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>👉 Fix Action Required:</p>
+            <p style={{ fontSize: 13, color: "var(--text-tertiary)" }}>Please open the <code>supabase_schema.sql</code> file, copy its contents, and execute it within your Supabase project&apos;s SQL Editor immediately.</p>
+          </div>
+        </div>
+      )}
 
       {/* Main content */}
       <main style={{ marginLeft: 224, flex: 1, paddingBottom: 80 }} className="today-main">
