@@ -102,7 +102,9 @@ export default function ProgressPage() {
         last7Days.push({
           date: dayOfWeek,
           minutes_planned: plannedMins,
-          minutes_spent: spentMins
+          minutes_spent: spentMins,
+          is_past: i > 0,
+          is_active_day: d >= startDate
         });
       }
 
