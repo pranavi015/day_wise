@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { object } = await generateObject({
-      model: groq("llama-3.3-70b-versatile"),
+      model: groq("mixtral-8x7b-32768"),
       schema: QuizSchema,
       system: "You are an expert quiz creator. Generate exactly 3 multiple-choice questions to test understanding of the given learning topic. Each question must have exactly 4 answer options and one correct answer. Include a brief explanation of why the correct answer is right.",
       prompt: `Generate a quiz for this topic:\nTitle: ${topic_title}\nDescription: ${topic_description || "No additional description provided."}`,

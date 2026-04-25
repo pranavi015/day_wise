@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     }
 
     const { object } = await generateObject({
-      model: groq("llama-3.3-70b-versatile"),
+      model: groq("mixtral-8x7b-32768"),
       system: "You are an expert curriculum designer. Break down the user's goal into exactly 6 distinct, logical topics for a roadmap. Return a JSON object with a 'topics' array. Each topic MUST have 'title', 'description', 'estimated_hours', and 'week_number'.",
       prompt: `Generate a full curriculum for this goal: ${goal}`,
       schema: z.object({

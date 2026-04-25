@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     };
 
     const { object } = await generateObject({
-      model: groq("llama-3.3-70b-versatile"),
+      model: groq("mixtral-8x7b-32768"),
       schema: RescheduleSchema,
       system: "You are a smart curriculum planner. Given a list of missed tasks and the current topic schedule, redistribute the missed work across upcoming weeks. Return topic_id and new_week_number for each topic that needs rescheduling. Provide a brief human summary of the changes.",
       prompt: `Missed tasks: ${JSON.stringify(missed_tasks)}
