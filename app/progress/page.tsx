@@ -140,12 +140,15 @@ export default function ProgressPage() {
       });
 
       // Burnout Risk Score (P13)
-      if (totalPlanned > 0) {
-        const missedDays = last7Days.filter(d => d.minutes_spent === 0 && d.minutes_planned > 0).length;
+      const trackedDaysCount = last7Days.filter(d => d.is_active_day).length;
+      if (totalPlanned > 0 && trackedDaysCount >= 3) {
+        const validTrackedDays = Math.max(1, trackedDaysCount);
+        const missedDays = last7Days.filter(d => d.minutes_spent === 0 && d.minutes_planned > 0 && d.is_past).length;
         const overStudying = adherence > 130 ? 20 : 0;
+        
         const rawBurnout = Math.min(100, Math.round((
           (1 - Math.min(adherence / 100, 1)) * 40 +
-          (missedDays / 7) * 40 +
+          (missedDays / validTrackedDays) * 40 +
           overStudying
         )));
         setBurnoutScore(rawBurnout);
@@ -438,9 +441,9 @@ export default function ProgressPage() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 800, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "1px" }}>Wellbeing Score</p>
-                  <p style={{ margin: "0 0 12px", fontSize: 24, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.5px" }}>Awaiting Data</p>
+                  <p style={{ margin: "0 0 12px", fontSize: 24, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.5px" }}>Getting started</p>
                   <p style={{ margin: 0, fontSize: 15, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                    Fill out your Roadmap and begin logging focus sessions to activate your personalized wellness analysis algorithms.
+                    Complete a few sessions to unlock insights
                   </p>
                 </div>
               </div>
