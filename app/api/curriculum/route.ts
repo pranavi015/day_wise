@@ -41,12 +41,22 @@ export async function POST(req: Request) {
     console.log("Raw AI Response:", text);
 
     try {
-      const json = JSON.parse(text.trim());
+      // Strip markdown code fences if the model wrapped its response
+      let cleaned = text.trim();
+      cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+
+      // Fallback: extract the first {...} block in case there's surrounding prose
+      if (!cleaned.startsWith("{")) {
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        if (match) cleaned = match[0];
+      }
+
+      const json = JSON.parse(cleaned);
       // Validate with Zod
       CurriculumSchema.parse(json);
-      
+
       return new Response(JSON.stringify(json), {
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
       });
     } catch {
       console.error("JSON Parse Error on text:", text);

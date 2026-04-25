@@ -121,7 +121,6 @@ export default function OnboardingPage() {
       pacing: state.intensity,
       sr_enabled: state.sr_enabled,
       exam_date: state.has_deadline && state.exam_date ? state.exam_date : null,
-      onboarding_complete: true,
     });
 
     if (profileError) {
