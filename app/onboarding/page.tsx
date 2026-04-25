@@ -35,6 +35,7 @@ export default function OnboardingPage() {
   const [topicInput, setTopicInput] = useState("");
   const [goalInput, setGoalInput] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const { object, submit, isLoading } = useObject({
     api: "/api/curriculum",
@@ -48,17 +49,24 @@ export default function OnboardingPage() {
         })
       ),
     }),
-    onFinish: ({ object }: { object?: { topics?: { title: string; description: string; estimated_hours: number; week_number: number }[] } }) => {
+    onFinish: ({ object }) => {
       if (object?.topics) {
-        const generatedTopics: Topic[] = object.topics.map((t: { title: string; estimated_hours: number }, i: number) => ({
+        const generatedTopics: Topic[] = object.topics.map((t, i) => ({
           id: `ai-${Date.now()}-${i}`,
           name: t.title,
+          description: t.description,
           difficulty: 3 as const,
-          estimated_minutes: t.estimated_hours * 60,
+          estimated_minutes: (t.estimated_hours || 2) * 60,
+          week_number: t.week_number || (Math.floor(i / 3) + 1),
         }));
         setState((s) => ({ ...s, topics: [...s.topics, ...generatedTopics] }));
         setGoalInput("");
+        setError(null);
       }
+    },
+    onError: (err) => {
+      console.error("AI Generation Error:", err);
+      setError("Failed to generate topics. Please check your API key or try a specific goal.");
     }
   });
 
@@ -113,12 +121,18 @@ export default function OnboardingPage() {
       const inserts = state.topics.map((t, i) => ({
         user_id: userId,
         title: t.name,
-        description: "",
+        description: t.description || "",
         estimated_hours: t.estimated_minutes / 60,
-        week_number: Math.floor(i / 3) + 1, // rough estimate if none provided
+        week_number: t.week_number || Math.floor(i / 3) + 1,
         sort_order: i,
       }));
-      await supabase.from("curricula").insert(inserts);
+      const { error: curriculaError } = await supabase.from("curricula").insert(inserts);
+      if (curriculaError) {
+        console.error("Error saving curricula:", curriculaError);
+        setError("Failed to save your roadmap. Please try again.");
+        setSaving(false);
+        return;
+      }
     }
 
     router.push("/today");
@@ -202,6 +216,11 @@ export default function OnboardingPage() {
                     {isLoading ? <Loader2 size={16} className="animate-spin" /> : "Build Path"}
                   </button>
                 </div>
+                {error && (
+                  <p style={{ color: "var(--error)", fontSize: 13, marginTop: 12, fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
+                    ⚠️ {error}
+                  </p>
+                )}
               </div>
 
               {/* Streaming Skeleton Loaders */}

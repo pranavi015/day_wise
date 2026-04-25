@@ -6,6 +6,8 @@ export interface Topic {
   name: string;
   difficulty: 1 | 2 | 3 | 4 | 5;
   estimated_minutes: number;
+  description?: string;
+  week_number?: number;
 }
 
 export interface Task {
