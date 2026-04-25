@@ -6,10 +6,10 @@ import type { Topic, Intensity, OnboardingState } from "@/types";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-const intensityOptions: { value: Intensity; label: string; desc: string; icon: string; hours: string }[] = [
-  { value: "relaxed", label: "Relaxed", desc: "Easy pace, plenty of breaks. Good for staying consistent.", icon: "🐢", hours: "~1h/day" },
-  { value: "balanced", label: "Balanced", desc: "Steady progress without burning out. Recommended.", icon: "⚖️", hours: "~1.5h/day" },
-  { value: "intense", label: "Intense", desc: "Maximum learning, minimal reviews. Move fast.", icon: "🚀", hours: "~2h/day" },
+const intensityOptions: { value: Intensity; label: string; desc: string; icon: string }[] = [
+  { value: "relaxed", label: "Relaxed", desc: "Easy pace, plenty of breaks. Good for staying consistent.", icon: "🐢" },
+  { value: "balanced", label: "Balanced", desc: "Steady progress without burning out. Recommended.", icon: "⚖️" },
+  { value: "intense", label: "Intense", desc: "Maximum learning, minimal reviews. Move fast.", icon: "🚀" },
 ];
 
 const initialState: OnboardingState = {
@@ -63,8 +63,12 @@ export default function OnboardingPage() {
     router.push("/today");
   }
 
+  const weeklyMinutes = state.weekly_varies
+    ? (Object.values(state.per_day_hours).reduce((a, b) => a + b, 0)) * 60
+    : state.daily_hours * 60 * 7;
+  
   const totalWeeks = Math.ceil(
-    state.topics.reduce((sum, t) => sum + t.estimated_minutes, 0) / (state.daily_hours * 60 * 5)
+    state.topics.reduce((sum, t) => sum + t.estimated_minutes, 0) / (weeklyMinutes || 1)
   ) || 4;
 
   const inputBase: React.CSSProperties = {
@@ -256,7 +260,6 @@ export default function OnboardingPage() {
                     <div style={{ flex: 1 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontWeight: 600, fontSize: 14, color: "var(--text-primary)" }}>{opt.label}</span>
-                        <span style={{ fontSize: 11.5, color: "var(--accent)", background: "var(--accent-subtle)", padding: "2px 8px", borderRadius: 20, fontWeight: 500 }}>{opt.hours}</span>
                       </div>
                       <p style={{ margin: "3px 0 0", fontSize: 12.5, color: "var(--text-tertiary)" }}>{opt.desc}</p>
                     </div>
@@ -307,7 +310,9 @@ export default function OnboardingPage() {
                         {t.name.split(" ")[0]}
                       </div>
                     ))}
-                    <div style={{ fontSize: 10, color: "var(--text-tertiary)", marginTop: 5 }}>{state.daily_hours}h</div>
+                    <div style={{ fontSize: 10, color: "var(--text-tertiary)", marginTop: 5 }}>
+                      {state.weekly_varies ? state.per_day_hours[day as keyof typeof state.per_day_hours] : state.daily_hours}h
+                    </div>
                   </div>
                 ))}
               </div>
@@ -316,7 +321,7 @@ export default function OnboardingPage() {
                 <span style={{ fontSize: 20 }}>📅</span>
                 <div>
                   <p style={{ margin: 0, fontWeight: 600, fontSize: 13.5, color: "var(--text-primary)" }}>Looks achievable</p>
-                  <p style={{ margin: 0, fontSize: 12.5, color: "var(--text-tertiary)" }}>{state.topics.length} topics · {state.daily_hours}h/day · {state.intensity} pace</p>
+                  <p style={{ margin: 0, fontSize: 12.5, color: "var(--text-tertiary)" }}>{state.topics.length} topics · {state.weekly_varies ? "Custom schedule" : `${state.daily_hours}h/day`} · {state.intensity} pace</p>
                 </div>
               </div>
 
