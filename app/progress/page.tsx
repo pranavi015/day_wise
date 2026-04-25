@@ -136,13 +136,56 @@ export default function ProgressPage() {
       });
       setHeatmapData(heatmap);
 
-      // 4. Set final stats
+      // 4. Calculate tasks so far logically based on curricula & schedule
+      const tasksSoFar: { scheduled_date: string }[] = [];
+      if (curricula && curricula.length > 0) {
+        const cStartDate = new Date(curricula[0].created_at);
+        cStartDate.setHours(0,0,0,0);
+        const cTargetDate = new Date();
+        cTargetDate.setHours(0,0,0,0);
+        
+        let currentTopicIdx = 0;
+        let remainingTopicMins = curricula[currentTopicIdx].estimated_hours * 60;
+        const iterDate = new Date(cStartDate);
+
+        while (iterDate <= cTargetDate && currentTopicIdx < curricula.length) {
+          const dayOfWeek = iterDate.toLocaleDateString("en-US", { weekday: "short" });
+          const dayMins = (sched.weekly_varies ? (sched.per_day_hours?.[dayOfWeek] || 1.5) : (sched.daily_hours || 1.5)) * 60;
+          let minsLeftToday = dayMins;
+          
+          while (minsLeftToday > 0 && currentTopicIdx < curricula.length) {
+            const allocate = Math.min(minsLeftToday, remainingTopicMins);
+            const iterIso = iterDate.toISOString().split("T")[0];
+            
+            tasksSoFar.push({ scheduled_date: iterIso });
+            
+            minsLeftToday -= allocate;
+            remainingTopicMins -= allocate;
+            
+            if (remainingTopicMins <= 0) {
+              currentTopicIdx++;
+              if (currentTopicIdx < curricula.length) {
+                remainingTopicMins = curricula[currentTopicIdx].estimated_hours * 60;
+              }
+            }
+          }
+          iterDate.setDate(iterDate.getDate() + 1);
+        }
+      }
+      
+      const todayIsoStr = new Date().toISOString().split("T")[0];
+      const completedSoFar = (completions as { completed_date: string }[] || []).filter(c => c.completed_date <= todayIsoStr);
+      
+      const completionRateRaw = tasksSoFar.length > 0 ? completedSoFar.length / tasksSoFar.length : 0;
+      const finalCompletionRate = Math.min(Math.round(completionRateRaw * 100), 100);
+
+      // 5. Set final stats
       const totalPlanned = last7Days.reduce((a,b)=>a+b.minutes_planned,0);
       const totalSpent = last7Days.reduce((a,b)=>a+b.minutes_spent,0);
       const adherence = totalPlanned > 0 ? Math.min(Math.round((totalSpent / totalPlanned) * 100), 100) : 0;
 
       setStats({
-        completionRate: completions && totalPlanned > 0 ? Math.min(Math.round((completions.length / (totalPlanned / 60)) * 100), 100) : 0,
+        completionRate: finalCompletionRate,
         streak: currentStreak,
         topicsMastered: 0,
         adherenceRate: adherence
