@@ -12,7 +12,7 @@ export default function ProgressPage() {
     topicsMastered: 0,
     adherenceRate: 0
   });
-  const [dailyData, setDailyData] = useState<{ date: string; minutes_planned: number; minutes_spent: number }[]>([]);
+  const [dailyData, setDailyData] = useState<{ date: string; minutes_planned: number; minutes_spent: number; is_past: boolean; is_active_day: boolean }[]>([]);
   const [topicData, setTopicData] = useState<{ name: string; mins: number }[]>([]);
   const [heatmapData, setHeatmapData] = useState<Record<string, number>>({});
   const [coachSummary, setCoachSummary] = useState<string | null>(null);
