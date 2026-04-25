@@ -72,10 +72,7 @@ export default function LoginPage() {
             </div>
 
             <div style={{ marginBottom: 20 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                <label style={{ fontSize: 12.5, fontWeight: 500, color: "var(--text-secondary)" }}>Password</label>
-                <Link href="#" style={{ fontSize: 12, color: "var(--accent)", textDecoration: "none" }}>Forgot password?</Link>
-              </div>
+              <label style={{ fontSize: 12.5, fontWeight: 500, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>Password</label>
               <div style={{ position: "relative" }}>
                 <Lock size={14} color="var(--text-tertiary)" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
                 <input type={showPass ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
