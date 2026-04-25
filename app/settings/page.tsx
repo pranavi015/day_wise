@@ -41,7 +41,7 @@ export default function SettingsPage() {
       if (!authData?.user) return;
       const userId = authData.user.id;
 
-      const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
+      const { data } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
       if (data) {
         setProfile({ id: userId, full_name: data.full_name || "", avatar_url: data.avatar_url || "" });
         if (data.schedule_json) setSchedule(data.schedule_json);

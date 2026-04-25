@@ -126,6 +126,7 @@ export default function RoadmapPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [activeModalWeek, setActiveModalWeek] = useState(1);
+  const [toast, setToast] = useState<{ show: boolean; msg: string; type: "success" | "error" } | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -199,7 +200,17 @@ export default function RoadmapPage() {
 
       if (itemsToUpsert.length > 0) {
         const { error } = await supabase.from("curricula").upsert(itemsToUpsert);
-        if (error) console.error("Failed to save roadmap:", error);
+        if (error) {
+          console.error("Failed to save roadmap:", error);
+          setToast({ show: true, msg: "Failed to save roadmap.", type: "error" });
+        } else {
+          setToast({ show: true, msg: "Roadmap saved successfully!", type: "success" });
+        }
+        setTimeout(() => setToast(null), 3000);
+      } else {
+         // Empty curricula also requires save confirmation just to be clear
+         setToast({ show: true, msg: "Roadmap saved successfully!", type: "success" });
+         setTimeout(() => setToast(null), 3000);
       }
 
       await fetchData();
@@ -340,7 +351,16 @@ export default function RoadmapPage() {
         </div>
       </main>
 
+      {/* Toast Notification */}
+      {toast?.show && (
+        <div style={{ position: "fixed", bottom: 40, right: 40, background: toast.type === "success" ? "var(--success)" : "var(--error)", color: "white", padding: "12px 24px", borderRadius: 12, display: "flex", alignItems: "center", gap: 10, boxShadow: "var(--shadow-lg)", zIndex: 1000, animation: "fadeInUp 0.3s ease-out forwards" }}>
+          <CheckCircle2 size={18} />
+          <span style={{ fontWeight: 600, fontSize: 14 }}>{toast.msg}</span>
+        </div>
+      )}
+
       <style>{`
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 768px) { .roadmap-main { margin-left: 0 !important; padding-bottom: 70px; } }
       `}</style>
     </div>

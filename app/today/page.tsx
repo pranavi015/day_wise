@@ -33,7 +33,7 @@ export default function TodayPage() {
 
       // Parallel fetch
       const results = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", userId).single(),
+        supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
         supabase.from("curricula").select("*").eq("user_id", userId).order("sort_order", { ascending: true }),
         supabase.from("task_completions").select("*").eq("user_id", userId),
         supabase.from("sr_cards").select("id, topic_id, next_review_date, curricula(title)").eq("user_id", userId).lte("next_review_date", todayStr)
@@ -96,13 +96,13 @@ export default function TodayPage() {
       setStreak(currentStreak);
 
       // Task generation logic
-      if (curricula && curricula.length > 0 && profile) {
+      if (curricula && curricula.length > 0) {
         const startDate = new Date(curricula[0].created_at);
         startDate.setHours(0,0,0,0);
         const targetDate = new Date();
         targetDate.setHours(0,0,0,0);
         
-        const sched = profile.schedule_json || {};
+        const sched = profile?.schedule_json || {};
         let currentTopicIdx = 0;
         let remainingTopicMins = curricula[currentTopicIdx].estimated_hours * 60;
         

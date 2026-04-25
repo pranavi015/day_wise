@@ -32,7 +32,7 @@ export default function ProgressPage() {
       // Parallel Data Fetching
       const startOfYear = new Date(new Date().getFullYear(), 0, 1).toISOString();
       const results = await Promise.all([
-        supabase.from("profiles").select("schedule_json").eq("id", userId).single(),
+        supabase.from("profiles").select("schedule_json").eq("id", userId).maybeSingle(),
         supabase.from("task_completions").select("*").eq("user_id", userId),
         supabase.from("focus_sessions").select("*").eq("user_id", userId).gte("completed_at", startOfYear),
         supabase.from("curricula").select("*").eq("user_id", userId),
