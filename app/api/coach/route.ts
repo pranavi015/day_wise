@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
       : "N/A";
 
     const { text } = await generateText({
-      model: groq("mixtral-8x7b-32768"),
+      model: groq("llama3-70b-8192"),
+      temperature: 0.3,
       system: "You are a warm, encouraging learning coach. Write a personalized weekly study summary in exactly 3 paragraphs separated by newlines. Paragraph 1: What went well. Paragraph 2: Where the student struggled. Paragraph 3: One concrete recommendation for next week. Be specific, human, and motivating. Keep each paragraph to 2-3 sentences.",
       prompt: `Weekly stats:
 - Topics completed: ${topics_completed.join(", ") || "None"}
@@ -51,6 +52,8 @@ export async function POST(req: NextRequest) {
 - Average quiz score: ${avgQuiz}/5
 - Days missed: ${missed_days} out of 7`,
     });
+
+    console.log("Raw AI Response (Coach):", text);
 
     // Cache result
     await supabaseAdmin.from("weekly_summaries").upsert({

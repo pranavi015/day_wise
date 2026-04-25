@@ -1,5 +1,5 @@
 import { createGroq } from "@ai-sdk/groq";
-import { generateObject } from "ai";
+import { generateText } from "ai";
 import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -29,15 +29,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "topic_title is required" }, { status: 400 });
     }
 
-    const { object } = await generateObject({
-      model: groq("mixtral-8x7b-32768"),
-      schema: QuizSchema,
-      system: "You are an expert quiz creator. Generate exactly 3 multiple-choice questions to test understanding of the given learning topic. Each question must have exactly 4 answer options and one correct answer. Include a brief explanation of why the correct answer is right.",
-      prompt: `Generate a quiz for this topic:\nTitle: ${topic_title}\nDescription: ${topic_description || "No additional description provided."}`,
+    const { text } = await generateText({
+      model: groq("llama3-70b-8192"),
+      temperature: 0.3,
+      system: `You are an expert quiz creator. 
+      Return ONLY a valid JSON object. 
+      No preamble, no explanation, no markdown backticks.
+      Goal: Generate 3 multiple-choice questions for the given topic.`,
+      prompt: `Topic: ${topic_title}\nDescription: ${topic_description || "No description"}. Return JSON matching the schema: { questions: [{ question, options: [4], correct_index, explanation }] }`,
     });
 
-    return NextResponse.json(object);
-  } catch {
+    console.log("Raw AI Response (Quiz):", text);
+
+    try {
+      const json = JSON.parse(text.trim());
+      QuizSchema.parse(json);
+      return NextResponse.json(json);
+    } catch {
+      console.error("Quiz JSON Parse Error:", text);
+      return NextResponse.json({ error: "AI returned invalid quiz format" }, { status: 500 });
+    }
+  } catch (error: unknown) {
+    console.error("Critical Quiz API Error:", error);
     return NextResponse.json({ error: "Failed to generate quiz" }, { status: 500 });
   }
 }

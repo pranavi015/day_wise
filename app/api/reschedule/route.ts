@@ -1,5 +1,5 @@
 import { createGroq } from "@ai-sdk/groq";
-import { generateObject } from "ai";
+import { generateText } from "ai";
 import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -25,19 +25,28 @@ export async function POST(req: NextRequest) {
       topics: { id: string; title: string; week_number: number; estimated_hours: number }[];
     };
 
-    const { object } = await generateObject({
-      model: groq("mixtral-8x7b-32768"),
-      schema: RescheduleSchema,
-      system: "You are a smart curriculum planner. Given a list of missed tasks and the current topic schedule, redistribute the missed work across upcoming weeks. Return topic_id and new_week_number for each topic that needs rescheduling. Provide a brief human summary of the changes.",
-      prompt: `Missed tasks: ${JSON.stringify(missed_tasks)}
-Remaining weeks: ${remaining_weeks}
-Current curriculum: ${JSON.stringify(topics)}
-
-Redistribute missed work across upcoming weeks and return updated week numbers for affected topics.`,
+    const { text } = await generateText({
+      model: groq("llama3-70b-8192"),
+      temperature: 0.3,
+      system: `You are a smart curriculum planner. 
+      Return ONLY a valid JSON object. 
+      No preamble, no explanation, no markdown backticks.
+      JSON structure: { updates: [{ topic_id, new_week_number }], summary: string }`,
+      prompt: `Missed: ${JSON.stringify(missed_tasks)}. Weeks: ${remaining_weeks}. Curr: ${JSON.stringify(topics)}.`,
     });
 
-    return NextResponse.json(object);
-  } catch {
+    console.log("Raw AI Response (Reschedule):", text);
+
+    try {
+      const json = JSON.parse(text.trim());
+      RescheduleSchema.parse(json);
+      return NextResponse.json(json);
+    } catch {
+      console.error("Reschedule JSON Parse Error:", text);
+      return NextResponse.json({ error: "AI returned invalid schedule format" }, { status: 500 });
+    }
+  } catch (error: unknown) {
+    console.error("Critical Reschedule API Error:", error);
     return NextResponse.json({ error: "Failed to generate schedule" }, { status: 500 });
   }
 }
