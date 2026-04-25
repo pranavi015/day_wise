@@ -5,12 +5,15 @@ import TaskCard from "@/components/TaskCard";
 import FocusTimer from "@/components/FocusTimer";
 import { supabase } from "@/lib/supabase";
 import type { Task } from "@/types";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trophy, X } from "lucide-react";
+import confetti from "canvas-confetti";
 
 export default function TodayPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [toast, setToast] = useState<{ show: boolean; text: string; streak: number } | null>(null);
 
   const todayStr = new Date().toISOString().split("T")[0];
   const todayDisplay = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
@@ -147,6 +150,28 @@ export default function TodayPage() {
     if (!authData?.user) return;
 
     if (newVal) {
+      // Check if all tasks are now done
+      const newTasks = tasks.map((t) => t.id === id ? { ...t, is_complete: true } : t);
+      const isNowAllDone = newTasks.length > 0 && newTasks.every(t => t.is_complete);
+      
+      if (isNowAllDone) {
+        setShowConfetti(true);
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ["#6366F1", "#10B981", "#F59E0B"]
+        });
+        setTimeout(() => setShowConfetti(false), 3000);
+
+        // Milestone check (mock logic: increment streak locally for check)
+        const newStreak = streak; // In real app, we'd wait for DB but let's celebrate now
+        if ([7, 30, 100].includes(newStreak)) {
+           setToast({ show: true, text: "Milestone Reached!", streak: newStreak });
+           setTimeout(() => setToast(null), 4000);
+        }
+      }
+
       // Mark complete
       await supabase.from("task_completions").insert({
         user_id: authData.user.id,
@@ -256,6 +281,33 @@ export default function TodayPage() {
       </main>
 
       <FocusTimer activeTopicId={tasks.length > 0 ? tasks[0].topic_id : undefined} />
+
+      {/* FULL SCREEN CELEBRATION */}
+      {showConfetti && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(99,102,241,0.05)", animation: "fadeIn 0.5s ease-out forwards" }}>
+          <div className="follow-through" style={{ background: "white", padding: "40px 60px", borderRadius: 32, boxShadow: "var(--shadow-xl)", textAlign: "center", border: "2px solid var(--accent-subtle)" }}>
+             <div style={{ fontSize: 80, marginBottom: 20 }}>🏆</div>
+             <h2 style={{ fontSize: 32, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 12px" }}>Daily Goal Hit!</h2>
+             <p style={{ fontSize: 18, color: "var(--text-secondary)" }}>You&apos;ve completed all your tasks. See you tomorrow!</p>
+          </div>
+        </div>
+      )}
+
+      {/* STREAK TOAST */}
+      {toast && (
+        <div className="toast-box" style={{ position: "fixed", bottom: 40, left: "50%", transform: "translateX(-50%)", zIndex: 1100, display: "flex", alignItems: "center", gap: 16, background: "var(--sidebar-bg)", color: "white", padding: "16px 24px", borderRadius: 16, boxShadow: "var(--shadow-xl)", border: "1px solid var(--sidebar-border)" }}>
+           <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Trophy color="var(--warning)" size={24} />
+           </div>
+           <div style={{ flex: 1 }}>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--warning)" }}>STREAK MILESTONE</p>
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Unstoppable! {toast.streak} day streak reached.</p>
+           </div>
+           <button onClick={() => setToast(null)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer", padding: 4 }}>
+              <X size={18} />
+           </button>
+        </div>
+      )}
 
       <style>{`
         @media (max-width: 768px) { .today-main { margin-left: 0 !important; padding-bottom: 120px !important; } }

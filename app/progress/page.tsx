@@ -14,6 +14,7 @@ export default function ProgressPage() {
   });
   const [dailyData, setDailyData] = useState<{ date: string; minutes_planned: number; minutes_spent: number }[]>([]);
   const [topicData, setTopicData] = useState<{ name: string; mins: number }[]>([]);
+  const [heatmapData, setHeatmapData] = useState<Record<string, number>>({});
 
   useEffect(() => {
     async function fetchProgress() {
@@ -25,10 +26,11 @@ export default function ProgressPage() {
       const userId = authData.user.id;
 
       // Parallel Data Fetching
+      const startOfYear = new Date(new Date().getFullYear(), 0, 1).toISOString();
       const results = await Promise.all([
         supabase.from("profiles").select("schedule_json").eq("id", userId).single(),
         supabase.from("task_completions").select("*").eq("user_id", userId),
-        supabase.from("focus_sessions").select("*").eq("user_id", userId).gte("completed_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+        supabase.from("focus_sessions").select("*").eq("user_id", userId).gte("completed_at", startOfYear),
         supabase.from("curricula").select("*").eq("user_id", userId)
       ]);
 
@@ -111,6 +113,14 @@ export default function ProgressPage() {
       
       setTopicData(topicArray);
 
+      // Yearly heatmap data
+      const heatmap: Record<string, number> = {};
+      sessions?.forEach(s => {
+        const d = s.completed_at.split("T")[0];
+        heatmap[d] = (heatmap[d] || 0) + s.duration_minutes;
+      });
+      setHeatmapData(heatmap);
+
       // 4. Set final stats
       const totalPlanned = last7Days.reduce((a,b)=>a+b.minutes_planned,0) || 1;
       const totalSpent = last7Days.reduce((a,b)=>a+b.minutes_spent,0);
@@ -152,7 +162,7 @@ export default function ProgressPage() {
           {/* Header */}
           <div style={{ marginBottom: 32 }}>
             <h1 style={{ margin: "0 0 8px", fontSize: 32, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.8px" }}>Your Progress</h1>
-            <p style={{ margin: 0, fontSize: 14.5, color: "var(--text-secondary)" }}>Last 7 Days Overview</p>
+            <p style={{ margin: 0, fontSize: 14.5, color: "var(--text-secondary)" }}>Activity Overview</p>
           </div>
 
           {/* AI Coach line */}
@@ -169,6 +179,54 @@ export default function ProgressPage() {
               <p style={{ margin: 0, fontSize: 14.5, color: "var(--sidebar-active-text)", fontWeight: 400, lineHeight: 1.5 }}>
                 {stats.adherenceRate > 80 ? "Outstanding adherence! Keep up this exact pacing to hit your goal effortlessly." : "A bit behind schedule this week. Consider adjusting your goals to a more relaxed pace if you feel overwhelmed."}
               </p>
+            </div>
+          </div>
+
+          {/* Activity Heatmap */}
+          <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: 16, padding: "24px", marginBottom: 32, boxShadow: "var(--shadow-sm)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "var(--text-primary)" }}>Activity Heatmap</h2>
+               <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                 <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>Less</span>
+                 {[0, 1, 2, 3, 4].map(l => (
+                   <div key={l} style={{ width: 10, height: 10, borderRadius: 2, background: l === 0 ? "var(--bg-muted)" : `rgba(99,102,241, ${0.2 + l * 0.2})` }} />
+                 ))}
+                 <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>More</span>
+               </div>
+            </div>
+            
+            <div style={{ 
+              display: "grid", 
+              gridTemplateColumns: "repeat(53, 1fr)", 
+              gap: 3, 
+              overflowX: "auto", 
+              paddingBottom: 8 
+            }} className="custom-scroll">
+              {Array.from({ length: 53 * 7 }).map((_, i) => {
+                const date = new Date(new Date().getFullYear(), 0, 1);
+                date.setDate(date.getDate() + i);
+                const iso = date.toISOString().split("T")[0];
+                const mins = heatmapData[iso] || 0;
+                const isFuture = date > new Date();
+                
+                let level = 0;
+                if (mins > 0) level = 1;
+                if (mins > 60) level = 2;
+                if (mins > 120) level = 3;
+                if (mins > 240) level = 4;
+                
+                const colors = ["var(--bg-muted)", "rgba(99,102,241, 0.2)", "rgba(99,102,241, 0.4)", "rgba(99,102,241, 0.7)", "rgba(99,102,241, 1)"];
+                
+                return (
+                  <div key={i} title={`${iso}: ${mins} mins`} style={{ 
+                    aspectRatio: "1/1", 
+                    borderRadius: 2, 
+                    background: isFuture ? "transparent" : colors[level],
+                    border: isFuture ? "1px solid var(--border-subtle)" : "none",
+                    minWidth: 10
+                  }} />
+                );
+              })}
             </div>
           </div>
 
