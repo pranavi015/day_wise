@@ -72,7 +72,7 @@ export default function ProgressPage() {
       }
 
       // 2. Build Daily Aggregates (Last 7 Days)
-      const last7Days = [];
+      const last7Days: { date: string; minutes_planned: number; minutes_spent: number; is_past: boolean; is_active_day: boolean }[] = [];
       const topicMinsMap: Record<string, number> = {};
 
       for (let i = 6; i >= 0; i--) {
