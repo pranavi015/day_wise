@@ -141,7 +141,8 @@ export default function ProgressPage() {
 
       // Burnout Risk Score (P13)
       const trackedDaysCount = last7Days.filter(d => d.is_active_day).length;
-      if (totalPlanned > 0 && trackedDaysCount >= 3) {
+      const actualTrackedDays = last7Days.filter(d => d.minutes_spent > 0).length;
+      if (totalPlanned > 0 && actualTrackedDays >= 3) {
         const validTrackedDays = Math.max(1, trackedDaysCount);
         const missedDays = last7Days.filter(d => d.minutes_spent === 0 && d.minutes_planned > 0 && d.is_past).length;
         const overStudying = adherence > 130 ? 20 : 0;
