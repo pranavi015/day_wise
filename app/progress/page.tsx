@@ -128,11 +128,13 @@ export default function ProgressPage() {
       
       setTopicData(topicArray);
 
-      // Yearly heatmap data
+      // Yearly heatmap data (Task Completions)
       const heatmap: Record<string, number> = {};
-      sessions?.forEach(s => {
-        const d = s.completed_at.split("T")[0];
-        heatmap[d] = (heatmap[d] || 0) + s.duration_minutes;
+      (completions as { completed_date: string }[] | null)?.forEach(c => {
+        const d = c.completed_date;
+        if (d) {
+          heatmap[d] = (heatmap[d] || 0) + 1;
+        }
       });
       setHeatmapData(heatmap);
 
@@ -299,19 +301,19 @@ export default function ProgressPage() {
                 const date = new Date(new Date().getFullYear(), 0, 1);
                 date.setDate(date.getDate() + i);
                 const iso = date.toISOString().split("T")[0];
-                const mins = heatmapData[iso] || 0;
+                const tasksCount = heatmapData[iso] || 0;
                 const isFuture = date > new Date();
                 
                 let level = 0;
-                if (mins > 0) level = 1;
-                if (mins > 60) level = 2;
-                if (mins > 120) level = 3;
-                if (mins > 240) level = 4;
+                if (tasksCount > 0) level = 1;
+                if (tasksCount >= 3) level = 2;
+                if (tasksCount >= 5) level = 3;
+                if (tasksCount >= 7) level = 4;
                 
                 const colors = ["var(--bg-muted)", "rgba(99,102,241, 0.2)", "rgba(99,102,241, 0.4)", "rgba(99,102,241, 0.7)", "rgba(99,102,241, 1)"];
                 
                 return (
-                  <div key={i} title={`${iso}: ${mins} mins`} style={{ 
+                  <div key={i} title={`${iso}: ${tasksCount} task${tasksCount !== 1 ? 's' : ''} completed`} style={{ 
                     aspectRatio: "1/1", 
                     borderRadius: 2, 
                     background: isFuture ? "transparent" : colors[level],
